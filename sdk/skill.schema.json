@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veriforge.dev/schemas/skill.schema.json",
+  "title": "Skill Manifest",
+  "type": "object",
+  "required": ["id", "version", "name", "description", "owner", "inputs", "outputs", "price", "verify_hook", "llm_compat"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+      "description": "Globally unique kebab-case identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "owner": {
+      "type": "object",
+      "required": ["name", "wallet"],
+      "properties": {
+        "name": { "type": "string" },
+        "contact": { "type": "string" },
+        "wallet": { "type": "string", "pattern": "^0x[a-fA-F0-9]{40}$" }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "required": ["schema"],
+      "properties": { "schema": { "type": "object" } }
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["schema"],
+      "properties": { "schema": { "type": "object" } }
+    },
+    "price": {
+      "type": "object",
+      "required": ["amount_usdc", "chain"],
+      "properties": {
+        "amount_usdc": { "type": "number", "minimum": 0, "maximum": 10 },
+        "chain": { "type": "string", "enum": ["base-sepolia", "base"] }
+      }
+    },
+    "verify_hook": {
+      "type": "object",
+      "required": ["module", "function"],
+      "properties": {
+        "module": { "type": "string" },
+        "function": { "type": "string" },
+        "invariants": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "llm_compat": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["kimi", "claude", "gemini", "ernie", "openai", "any"] },
+      "minItems": 1
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "reuse_from": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string" },
+        "agent": { "type": "string" }
+      }
+    }
+  }
+}

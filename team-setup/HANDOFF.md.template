@@ -1,0 +1,51 @@
+# HANDOFF.md
+
+**离线前最后一件事：写这个文件 + commit + push。接班方第一件事：git pull + read 这个文件。**
+
+## 最新 handoff
+
+### From: @duan → @ryan  (or 反向)
+### Date: YYYY-MM-DD HH:MM (GMT+8)
+### Until: YYYY-MM-DD HH:MM (when I'll be back)
+
+#### ✅ 今天我做完的
+- `<list specific commits / PRs>`
+- `<deployed preview URL>`
+
+#### 🟡 还在跑 / 半成品
+- `<branch name>` — 进度到 X，下一步该 Y
+- `<具体卡在哪：error message / file:line / 决策点>`
+
+#### 🚨 你接班需要立刻处理
+- `<urgent: prod down / sponsor deadline / etc>`
+- `<或: 无紧急事项>`
+
+#### 💡 我想到但还没做的
+- `<idea 1>`
+- `<idea 2>`
+
+#### 🔑 关键 context（你 Claude Code 应该知道的）
+- `<刚改了 architecture / 加了新 sponsor / 重命名了什么>`
+- `<决策见 DECISIONS.md#YYYY-MM-DD-HH:MM>`
+
+#### 📋 你接班的优先级建议
+1. `<task 1>` — owner: @ryan — 因为 `<why>`
+2. `<task 2>`
+3. `<task 3>`
+
+#### ⏰ 我会在 YYYY-MM-DD HH:MM 回来
+
+---
+
+## 用法
+
+**Claude Code 自动生成 handoff**:
+
+```
+@claude please read today's git log on my branches + SPRINT.md status
++ DECISIONS.md latest entries, and write HANDOFF.md from me to my teammate.
+Include: what I finished, what's in progress with exact stop point,
+urgent items, ideas, and context they need.
+```
+
+让 Claude Code 写一稿，你 review 后 push。比自己写省 5 分钟。

@@ -1,0 +1,29 @@
+id: sentiment-analyze
+version: 0.1.0
+name: "Sentiment Analyzer"
+description: >
+  Analyze sentiment of any text into positive/neutral/negative with emotion
+  breakdown and intensity score. Domain-agnostic. Horizontal skill.
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [text]
+    properties:
+      text: { type: string, minLength: 1, maxLength: 10000 }
+
+outputs:
+  schema:
+    type: object
+    required: [sentiment, intensity]
+    properties:
+      sentiment: { type: string, enum: [positive, neutral, negative] }
+      intensity: { type: number, minimum: 0, maximum: 1 }
+      emotions: { type: array, items: { type: string } }
+
+price: { amount_usdc: 0.005, chain: base-sepolia }
+verify_hook: { module: verify, function: verify, invariants: ["sentiment is valid enum", "intensity in [0,1]"] }
+llm_compat: [gemini, any]
+tags: [horizontal, capability:nlp, capability:sentiment]

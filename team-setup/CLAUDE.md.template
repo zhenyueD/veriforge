@@ -1,0 +1,118 @@
+# CLAUDE.md
+
+**项目 single source of truth — 双 Claude Code 启动时自动读。**
+
+## 项目定位
+
+- **名称**: `<TBD>`
+- **Hackathon**: `<TBD — lablab / DevPost / MS AI Agents / 等>`
+- **主题**: `<TBD>`
+- **截止**: `<YYYY-MM-DD>`
+- **团队**: Duan (`@duan`, GMT+8) + Ryan (`@ryan`, GMT+8 Singapore)
+- **AI 队友**: 双 Claude Code（双方都用同一工具）
+
+## 一句话描述
+
+`<TBD — 用户输入一句话能 grasp，参考 Deals Machine "an autonomous B2B cold-call agent...">`
+
+## 评委 5 步路径（边写边维护，最后 polish）
+
+1. `git clone <repo> && cd <repo> && cp .env.example .env` — 填 3 个 key
+2. `./start.sh` — boot worker + cockpit
+3. Open <URL> — 点 "<X>"
+4. 看 <Y> 流式显示 agent 推理
+5. 看 [JUDGING.md](./JUDGING.md) sponsor 验证清单
+
+## Sponsor 列表 + ownership
+
+| Sponsor | 集成什么 | 子目录 | Owner | 评委验证命令 |
+|---|---|---|---|---|
+| `<Sponsor A>` | `<API X>` | `<sponsor-a-name>/` | `@duan` 或 `@ryan` | `<command>` |
+| `<Sponsor B>` | ... | ... | ... | ... |
+
+**规则**：每个 sponsor 集成必须是**独立子目录** + Dockerfile + DEPLOY.md（用 `/hackathon-sponsor-packager` skill）。**主项目不要内嵌 sponsor 调用**。
+
+## 架构
+
+```
+<TBD — ASCII 架构图。参考 Deals Machine README 第 60 行>
+```
+
+## Stack
+
+| 层 | Tech | 选择理由 |
+|---|---|---|
+| Frontend | `<Next.js / Vite / 等>` | `<why>` |
+| Backend | `<Fastify / FastAPI / 等>` | `<why>` |
+| 数据库 | `<Postgres / Supabase / 等>` | `<why>` |
+| LLM | `<Claude / Gemini / Groq / 多模型>` | `<why>` |
+| 部署 | `<Vercel / Vultr / Railway>` | `<why>` |
+
+## 命名约定
+
+- **目录名**: kebab-case (`sponsor-vultr-worker/`)
+- **文件名**: 与目录一致
+- **函数名**: camelCase (TS) / snake_case (Python)
+- **环境变量**: `UPPER_SNAKE_CASE`，sponsor-prefixed (`VULTR_API_KEY`)
+- **分支名**: `<owner>/<feat-name>`（如 `duan/sponsor-vultr-init` / `ryan/frontend-pipeline`）
+- **commit prefix**: `feat:` / `fix:` / `chore:` / `wip:`
+
+## 22 skill 武器库（双方 Claude Code 应主动调用）
+
+**Tier 1 基础**: hackathon-sponsor-packager, realtime-activity-stream, event-sourced-agent-execution, prompt-injection-shield
+**Tier 2 决策**: auditable-decision-chain, hyde-hybrid-rag
+**Tier 3 Gemini**: gemini-multimodal-research
+**Tier 4 部署**: multi-zone-data-residency, tiered-request-pipeline
+**Tier 5 信号**: invariant-testing-harness
+**Tier 6 Web3**: x402-pay-per-query-endpoint, mcp-thin-proxy-skeleton
+**Tier 7 Agent 设计**: recipe-execution-agent-split, nl-to-agent-workflow-builder, two-stage-prompt-token-optimization, dual-model-intent-router, state-machine-agent-context-offload, self-reflective-rag-completeness-loop
+**Tier 8 Eval/Obs**: langfuse-agent-tracing, llm-eval-yaml-harness
+**Tier 9 Demo**: hackathon-demo-video-script, evaluator-friendly-readme
+
+**Meta-agent**: `hackathon-strategist` — 总策略调度，每日激活
+
+## 协作 protocol
+
+### Git 流
+- 主分支 `main` 永远 demo-ready
+- 改动走 `<owner>/<feat>` 分支 + PR
+- PR 自动 deploy Vercel preview
+- CI 跑 lint + typecheck + key e2e；绿了 auto-merge
+- **不 require review approval**（2 人 hackathon 是 overhead）
+
+### Decision protocol
+- 架构 / sponsor 选型 / 命名约定 → 双方 sync 后写 `DECISIONS.md`
+- 实现细节 → 单方决定 + commit message 说明
+
+### Daily ritual
+- 开工：read `HANDOFF.md` + `SPRINT.md`
+- 下工：写 `HANDOFF.md` + 录 60s micro-demo + push
+- 在 Discord `#daily` channel 同步
+
+### Status signal
+- 在 Discord 发：`🟢 deep work` / `🟡 available` / `🔴 sleeping` / `⚪ off`
+
+## 当前 sprint
+
+见 `SPRINT.md`。
+
+## 已做决策
+
+见 `DECISIONS.md`。
+
+## 安全
+
+- 不在 Discord / chat 贴 API key
+- 所有 secret 用 GitHub Secrets + `.env.example`
+- 提交后所有 key 立即 rotate（教训：上次 hackathon OpenAI key 暴露过）
+
+## 反模式（不要做的）
+
+- 不要在主分支直接 push
+- 不要 require PR review approval（overhead）
+- 不要把 sponsor 集成埋在主应用（违反 sponsor-packager 模式）
+- 不要 demo video > 90 秒（评委疲劳）
+- 不要 README 没"评委 5 步路径"
+- 不要在 catch 里 swallow LLM error 装成 success
+- 不要 mock 数据冒充真实集成（partial fakery）
+- 不要 git submodule 不 init 就提交（空心 submodule 是致命伤）

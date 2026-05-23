@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VeriForge — Verifiable Skill Marketplace</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #07090f;
+    --bg-1: #0d111c;
+    --bg-2: #161b29;
+    --bg-3: #1f2538;
+    --border: #2a3148;
+    --border-strong: #3a4566;
+    --fg: #f3f5fb;
+    --fg-dim: #aab3c8;
+    --fg-mute: #6b7593;
+    --accent: #5cf2c8;       /* cyan-mint, MiroMind verification feel */
+    --accent-2: #9b7bff;     /* purple, KIMI feel */
+    --accent-3: #ff9a4e;     /* warm, payment */
+    --ok: #5cf2a0;
+    --warn: #ffce4e;
+    --err: #ff5478;
+    --grad-1: linear-gradient(135deg, #5cf2c8 0%, #9b7bff 100%);
+    --grad-2: linear-gradient(135deg, #9b7bff 0%, #ff9a4e 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-0); color: var(--fg);
+               font: 15px/1.6 "Inter", -apple-system, system-ui, sans-serif;
+               -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+
+  /* ─── Nav ─── */
+  nav { display: flex; align-items: center; padding: 18px 40px;
+        border-bottom: 1px solid var(--border); position: sticky; top: 0;
+        background: rgba(7,9,15,0.85); backdrop-filter: blur(12px); z-index: 100;
+        justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800;
+           font-size: 18px; letter-spacing: 0.5px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 7px;
+                background: var(--grad-1); display: flex; align-items: center;
+                justify-content: center; font-size: 14px; color: #07090f; font-weight: 900; }
+  .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--fg-dim); }
+  .nav-links a { color: var(--fg-dim); text-decoration: none; transition: color .2s; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-status { display: flex; align-items: center; gap: 6px; font-size: 12px;
+                color: var(--fg-dim); padding: 5px 10px; border-radius: 999px;
+                border: 1px solid var(--border); background: var(--bg-1); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok);
+                animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ─── Hero ─── */
+  .hero { padding: 80px 40px 60px; text-align: center; max-width: 980px;
+          margin: 0 auto; }
+  .hero-eyebrow { display: inline-block; font-size: 12px; letter-spacing: 1.5px;
+                  color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
+                  padding: 5px 14px; border: 1px solid var(--accent); border-radius: 999px; }
+  .hero h1 { font-size: 56px; line-height: 1.05; margin: 0 0 20px;
+             font-weight: 800; letter-spacing: -1px; }
+  .hero h1 .grad { background: var(--grad-1); -webkit-background-clip: text;
+                   background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 19px; color: var(--fg-dim); max-width: 720px;
+            margin: 0 auto 36px; }
+  .hero-cta { display: inline-flex; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
+         border-radius: 8px; font-weight: 600; font-size: 14px; font-family: inherit;
+         cursor: pointer; border: 0; transition: transform .15s, box-shadow .15s; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--grad-1); color: #07090f;
+                 box-shadow: 0 4px 24px -4px rgba(92,242,200,0.4); }
+  .btn-primary:not(:disabled):hover { transform: translateY(-1px);
+                                      box-shadow: 0 6px 28px -2px rgba(92,242,200,0.55); }
+  .btn-ghost { background: transparent; color: var(--fg); border: 1px solid var(--border-strong); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .hero-stats { display: flex; gap: 48px; justify-content: center; margin-top: 60px; }
+  .hero-stat { text-align: center; }
+  .hero-stat .num { font-size: 32px; font-weight: 800; font-family: "JetBrains Mono", monospace;
+                    background: var(--grad-1); -webkit-background-clip: text;
+                    background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero-stat .lbl { font-size: 12px; color: var(--fg-mute); margin-top: 2px;
+                    text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ─── Section ─── */
+  section { padding: 80px 40px; max-width: 1280px; margin: 0 auto; }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-end;
+                    margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+  .section-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 6px; }
+  .section-sub { color: var(--fg-dim); font-size: 15px; margin: 0; }
+  .section-eyebrow { font-size: 11px; letter-spacing: 1.5px; color: var(--accent);
+                     text-transform: uppercase; margin-bottom: 8px; display: block; }
+
+  /* ─── Skill Marketplace Grid ─── */
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+                 gap: 16px; }
+  .skill-card { background: var(--bg-1); border: 1px solid var(--border);
+                border-radius: 14px; padding: 20px; transition: all .25s;
+                position: relative; overflow: hidden; cursor: pointer; }
+  .skill-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0;
+                        height: 3px; background: var(--grad-1); opacity: 0;
+                        transition: opacity .25s; }
+  .skill-card:hover { border-color: var(--border-strong); transform: translateY(-2px);
+                      box-shadow: 0 8px 32px -4px rgba(0,0,0,0.5); }
+  .skill-card:hover::before { opacity: 1; }
+  .skill-card.horizontal::before { background: var(--grad-2); }
+  .skill-icon { width: 40px; height: 40px; border-radius: 9px; background: var(--bg-3);
+                display: flex; align-items: center; justify-content: center; font-size: 20px;
+                margin-bottom: 14px; border: 1px solid var(--border); }
+  .skill-name { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+  .skill-provider { font-size: 11px; color: var(--accent); text-transform: uppercase;
+                    letter-spacing: 1px; margin-bottom: 12px; font-family: "JetBrains Mono", monospace; }
+  .skill-card.horizontal .skill-provider { color: var(--accent-2); }
+  .skill-desc { font-size: 13px; color: var(--fg-dim); line-height: 1.55;
+                margin-bottom: 14px; min-height: 60px; }
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .skill-tags span { font-size: 10px; padding: 3px 8px; border-radius: 4px;
+                     background: var(--bg-3); color: var(--fg-dim);
+                     font-family: "JetBrains Mono", monospace; letter-spacing: 0.3px; }
+  .skill-footer { display: flex; justify-content: space-between; align-items: center;
+                  padding-top: 14px; border-top: 1px solid var(--border); }
+  .skill-price { font-family: "JetBrains Mono", monospace; font-weight: 600;
+                 font-size: 14px; color: var(--accent-3); }
+  .skill-price .unit { color: var(--fg-mute); font-size: 11px; margin-left: 2px; }
+  .skill-try { font-size: 12px; color: var(--accent); font-weight: 600;
+               display: flex; align-items: center; gap: 4px; }
+
+  /* ─── Live Demo ─── */
+  #demo { background: var(--bg-1); border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border); }
+  .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .panel { background: var(--bg-2); border: 1px solid var(--border);
+           border-radius: 14px; padding: 22px; }
+  .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
+                 color: var(--fg-mute); margin: 0 0 14px; font-family: "JetBrains Mono", monospace; }
+  textarea { width: 100%; min-height: 96px; background: var(--bg-1); color: var(--fg);
+             border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+             font: 14px/1.5 "JetBrains Mono", monospace; resize: vertical; }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+  .examples span { background: var(--bg-1); padding: 6px 12px; border-radius: 6px;
+                   font-size: 12px; color: var(--fg-dim); cursor: pointer;
+                   border: 1px solid var(--border); transition: all .15s;
+                   font-family: "JetBrains Mono", monospace; }
+  .examples span:hover { color: var(--accent); border-color: var(--accent); }
+  .demo-controls { display: flex; justify-content: space-between; align-items: center; }
+  .session-info { font-size: 12px; color: var(--fg-mute); font-family: "JetBrains Mono", monospace; }
+
+  pre.plan { background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px;
+             padding: 14px; max-height: 280px; overflow: auto; font: 12px/1.5 "JetBrains Mono", monospace;
+             color: var(--fg-dim); margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+  .activity-stream { display: flex; flex-direction: column; gap: 6px;
+                     max-height: 540px; overflow-y: auto; padding-right: 4px; }
+  .event-row { padding: 10px 12px; border-radius: 7px; border-left: 3px solid var(--border-strong);
+               background: var(--bg-1); display: grid; grid-template-columns: 130px 1fr auto;
+               gap: 10px; align-items: baseline; font-size: 12px;
+               animation: slideIn .25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .event-row .kind { font-family: "JetBrains Mono", monospace; font-weight: 600;
+                     font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+                     color: var(--fg-dim); }
+  .event-row[data-kind="route_planned"] .kind { color: var(--accent-2); }
+  .event-row[data-kind="route_planned"] { border-left-color: var(--accent-2); }
+  .event-row[data-kind="skill_started"] .kind,
+  .event-row[data-kind="skill_started"] { border-left-color: var(--accent); }
+  .event-row[data-kind="skill_started"] .kind { color: var(--accent); }
+  .event-row[data-kind="skill_payment_settled"] .kind,
+  .event-row[data-kind="skill_payment_settled"] { border-left-color: var(--accent-3); }
+  .event-row[data-kind="skill_payment_settled"] .kind { color: var(--accent-3); }
+  .event-row[data-kind="skill_completed"],
+  .event-row[data-kind="skill_completed"] .kind { border-left-color: var(--ok); }
+  .event-row[data-kind="skill_completed"] .kind { color: var(--ok); }
+  .event-row[data-kind="audit_appended"],
+  .event-row[data-kind="audit_appended"] .kind { border-left-color: #66c2ff; }
+  .event-row[data-kind="audit_appended"] .kind { color: #66c2ff; }
+  .event-row[data-kind="session_completed"] { border-left-color: var(--ok);
+                                              background: rgba(92,242,160,0.06); }
+  .event-row[data-kind="session_completed"] .kind { color: var(--ok); }
+  .event-row[data-kind="skill_failed"] { border-left-color: var(--err); }
+  .event-row[data-kind="skill_failed"] .kind { color: var(--err); }
+  .event-body { color: var(--fg); font-family: "JetBrains Mono", monospace; }
+  .event-body b { color: var(--accent); font-weight: 600; }
+  .event-meta { color: var(--fg-mute); font-family: "JetBrains Mono", monospace; font-size: 10px; }
+  .event-ts { color: var(--fg-mute); font-family: "JetBrains Mono", monospace; font-size: 11px; }
+  .event-verify-link { color: #66c2ff; cursor: pointer; text-decoration: none;
+                       margin-left: 4px; font-family: "JetBrains Mono", monospace; font-size: 10px; }
+  .event-verify-link:hover { text-decoration: underline; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--fg-mute); font-size: 13px; }
+
+  /* ─── Verify Panel ─── */
+  #verify { padding-top: 50px; }
+  .verify-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .verify-row input { flex: 1; background: var(--bg-1); color: var(--fg);
+                       border: 1px solid var(--border); border-radius: 8px;
+                       padding: 12px 14px; font: 13px/1.4 "JetBrains Mono", monospace; }
+  .verify-row input:focus { outline: none; border-color: var(--accent); }
+  .verify-result { padding: 16px; border-radius: 8px; background: var(--bg-1);
+                   font: 12px/1.5 "JetBrains Mono", monospace; max-height: 320px;
+                   overflow-y: auto; border: 1px solid var(--border); }
+  .verify-result.pass { border-color: var(--ok); background: rgba(92,242,160,0.05); }
+  .verify-result.fail { border-color: var(--err); background: rgba(255,84,120,0.05); }
+  .verify-result.idle { color: var(--fg-mute); }
+  .verify-badge { display: inline-block; padding: 3px 10px; border-radius: 999px;
+                  font-size: 11px; font-weight: 600; font-family: "JetBrains Mono", monospace;
+                  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .verify-badge.pass { background: rgba(92,242,160,0.15); color: var(--ok); border: 1px solid var(--ok); }
+  .verify-badge.fail { background: rgba(255,84,120,0.15); color: var(--err); border: 1px solid var(--err); }
+  pre.verify-pre { margin: 0; white-space: pre-wrap; word-break: break-word; color: var(--fg-dim); }
+
+  /* ─── Sponsors footer ─── */
+  footer { padding: 60px 40px 40px; border-top: 1px solid var(--border);
+           background: var(--bg-1); text-align: center; }
+  .sponsors-label { font-size: 11px; letter-spacing: 1.5px; color: var(--fg-mute);
+                    text-transform: uppercase; margin-bottom: 24px; }
+  .sponsors { display: flex; gap: 36px; justify-content: center; flex-wrap: wrap;
+              margin-bottom: 32px; }
+  .sponsor { color: var(--fg-dim); font-weight: 600; font-size: 14px;
+             padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+             background: var(--bg-2); }
+  .sponsor.p0 { border-color: var(--accent); color: var(--accent); }
+  .footer-meta { color: var(--fg-mute); font-size: 12px; font-family: "JetBrains Mono", monospace; }
+  .footer-meta a { color: var(--fg-dim); text-decoration: none; }
+
+  /* ─── Skeleton loader for skill cards ─── */
+  .skill-skeleton { animation: pulse-bg 1.4s infinite; }
+  @keyframes pulse-bg { 0%, 100% { background: var(--bg-1); } 50% { background: var(--bg-2); } }
+
+  @media (max-width: 760px) {
+    .hero h1 { font-size: 36px; }
+    .demo-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 24px; flex-wrap: wrap; }
+    .nav-links { display: none; }
+    section { padding: 50px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <span class="brand-mark">V</span>
+    <span>VeriForge</span>
+  </div>
+  <div class="nav-links">
+    <a href="#marketplace">Marketplace</a>
+    <a href="#demo">Live Demo</a>
+    <a href="#verify">Verify</a>
+    <a href="#sponsors">Sponsors</a>
+  </div>
+  <div class="nav-status">
+    <span class="status-dot"></span>
+    <span id="navStatus">9 skills live</span>
+  </div>
+</nav>
+
+<div class="hero">
+  <span class="hero-eyebrow">UCWS Singapore 2026 · Skills Track</span>
+  <h1>The App Store for<br><span class="grad">verifiable AI skills</span></h1>
+  <p>Compose, pay-per-call, and cryptographically audit any agent skill across LLM providers. Every invocation is paid in USDC and chained into a tamper-evident SHA-256 audit log anyone can verify.</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try Live Demo →</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('marketplace').scrollIntoView({behavior:'smooth'})">Browse Skills</button>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="num" id="statSkills">9</div>
+      <div class="lbl">Live Skills</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num" id="statCalls">0</div>
+      <div class="lbl">Calls Logged</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num" id="statChained">0</div>
+      <div class="lbl">Audit Entries</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">100%</div>
+      <div class="lbl">Verifiable</div>
+    </div>
+  </div>
+</div>
+
+<section id="marketplace">
+  <div class="section-header">
+    <div>
+      <span class="section-eyebrow">Catalog</span>
+      <h2 class="section-title">Skill Marketplace</h2>
+      <p class="section-sub">Any agent can discover, invoke, and pay for these skills. Hover for details — click to try in the demo below.</p>
+    </div>
+  </div>
+  <div class="skills-grid" id="skillsGrid">
+    <div class="skill-card skill-skeleton" style="height:280px;"></div>
+    <div class="skill-card skill-skeleton" style="height:280px;"></div>
+    <div class="skill-card skill-skeleton" style="height:280px;"></div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="section-header">
+    <div>
+      <span class="section-eyebrow">Live Demo</span>
+      <h2 class="section-title">Watch an agent compose skills in realtime</h2>
+      <p class="section-sub">Any user input flows through KIMI-powered routing, paid micro-transactions, and a tamper-evident audit chain.</p>
+    </div>
+  </div>
+  <div class="demo-grid">
+    <div class="panel">
+      <p class="panel-title">1 · Customer / Agent Input</p>
+      <textarea id="input" placeholder="e.g. My mug arrived with a crack along the rim. Order ORD-1234."></textarea>
+      <div class="examples" id="examples">
+        <span data-ex="My ceramic mug arrived cracked. Order ORD-1234.">📦 e-commerce claim</span>
+        <span data-ex="Translate this paragraph to Chinese: Yesterday the cat sat on the mat.">🌐 translation</span>
+        <span data-ex="This is the third time I have written. My lawyer will hear about this. ORD-5050.">🚨 escalation</span>
+        <span data-ex="Summarize this 50-page contract into 5 bullet points.">📑 summarization</span>
+      </div>
+      <div class="demo-controls">
+        <button class="btn btn-primary" id="runBtn">Run Pipeline →</button>
+        <span class="session-info" id="sessionInfo"></span>
+      </div>
+      <div style="margin-top:18px;">
+        <p class="panel-title">2 · KIMI Router Plan</p>
+        <pre class="plan" id="plan">Awaiting input…</pre>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-title">3 · Live Activity Stream <span style="color:var(--fg-mute);font-weight:400;">· every skill call, payment, and audit entry</span></p>
+      <div class="activity-stream" id="activity">
+        <div class="empty-state">▷ Events stream here when you run the pipeline.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="verify">
+  <div class="section-header">
+    <div>
+      <span class="section-eyebrow">Public Verification</span>
+      <h2 class="section-title">/verify/:trace_id</h2>
+      <p class="section-sub">Paste any trace_id from the activity stream — or from any agent that called these skills — and independently verify the SHA-256 audit chain.</p>
+    </div>
+  </div>
+  <div class="verify-row">
+    <input id="traceInput" placeholder="paste a trace_id (e.g. 7a9f5fc7401340a8be33456110748e44)">
+    <button class="btn btn-primary" id="verifyBtn">Verify Chain</button>
+  </div>
+  <div id="verifyResult" class="verify-result idle">⏳ Verify a trace to see the full audit chain and cryptographic verification result.</div>
+</section>
+
+<footer id="sponsors">
+  <div class="sponsors-label">Architecturally Powered By</div>
+  <div class="sponsors">
+    <div class="sponsor p0">KIMI · 256k Router</div>
+    <div class="sponsor p0">MiroMind · Verification</div>
+    <div class="sponsor p0">Google Cloud · Gemini Vision</div>
+    <div class="sponsor">EPIC Connector · Canlah AI</div>
+    <div class="sponsor">BytePlus · Baidu · Singtel</div>
+  </div>
+  <div class="footer-meta">
+    Built solo in 5 days · UCWS Singapore Hackathon 2026 · Skills Track<br>
+    9 skills · 1 marketplace · 0 vendor lock-in
+  </div>
+</footer>
+
+<script>
+// ─── Config (use service-name URLs from registry; remap to localhost for browser) ───
+const ROUTER_URL   = 'http://localhost:8000';
+const ACTIVITY_URL = 'http://localhost:8002';
+const AUDIT_URL    = 'http://localhost:8001';
+
+let currentSessionId = null;
+let lastSeenTs = 0;
+let totalCalls = 0;
+let totalAudit = 0;
+
+const $ = (id) => document.getElementById(id);
+
+function el(tag, props = {}, children = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'dataset') Object.assign(e.dataset, v);
+    else if (k.startsWith('on')) e[k] = v;
+    else if (k === 'text') e.textContent = v;
+    else e.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+    else if (c) e.appendChild(c);
+  }
+  return e;
+}
+
+// ─── Icons per skill (emoji-friendly) ───
+const ICONS = {
+  'claims-intent': '🎯',
+  'claims-emotion': '💗',
+  'claims-needs': '🧭',
+  'claims-damage-vision': '📸',
+  'claims-compensation': '💰',
+  'claims-verify': '✅',
+  'text-summarize': '📑',
+  'text-translate': '🌐',
+  'sentiment-analyze': '😊',
+};
+
+const EXAMPLE_INPUT = {
+  'claims-intent': 'My mug arrived cracked, order ORD-1234.',
+  'claims-emotion': 'This is the third time I have written. My lawyer will hear about this.',
+  'claims-needs': 'My mug arrived cracked. It was a birthday gift for my sister this Friday.',
+  'claims-damage-vision': 'My mug has a 2cm crack along the rim.',
+  'claims-compensation': 'My mug arrived cracked, order ORD-1234.',
+  'claims-verify': 'My mug arrived cracked, order ORD-1234.',
+  'text-summarize': 'Summarize this paragraph into 3 bullets: Lorem ipsum dolor sit amet…',
+  'text-translate': 'Translate this paragraph to Chinese: Yesterday the cat sat on the mat.',
+  'sentiment-analyze': 'I am extremely disappointed with this purchase.',
+};
+
+// ─── Load registry and render marketplace ───
+async function loadMarketplace() {
+  try {
+    const r = await fetch(`${ROUTER_URL}/registry`);
+    const data = await r.json();
+    const skills = data.skills || [];
+    $('statSkills').textContent = skills.length;
+    $('navStatus').textContent = `${skills.length} skills live`;
+    renderSkills(skills);
+  } catch (e) {
+    $('skillsGrid').textContent = `Failed to load registry: ${e.message}`;
+  }
+}
+
+function renderSkills(skills) {
+  const grid = $('skillsGrid');
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
+  for (const s of skills) {
+    const isHorizontal = (s.tags || []).some(t => t.includes('horizontal'));
+    const provider = isHorizontal ? 'Horizontal' : 'ClaimsForge Bundle';
+    const card = el('div', {
+      class: 'skill-card' + (isHorizontal ? ' horizontal' : ''),
+      onclick: () => {
+        $('input').value = EXAMPLE_INPUT[s.id] || `Try ${s.name}…`;
+        $('demo').scrollIntoView({behavior: 'smooth'});
+      },
+    });
+    card.appendChild(el('div', {class: 'skill-icon', text: ICONS[s.id] || '🧩'}));
+    card.appendChild(el('div', {class: 'skill-provider', text: provider}));
+    card.appendChild(el('div', {class: 'skill-name', text: s.name || s.id}));
+    card.appendChild(el('div', {class: 'skill-desc', text: (s.description || '').slice(0, 180)}));
+    const tagsDiv = el('div', {class: 'skill-tags'});
+    for (const t of (s.tags || []).slice(0, 3)) {
+      tagsDiv.appendChild(el('span', {text: t.replace('vertical:', '').replace('capability:', '')}));
+    }
+    card.appendChild(tagsDiv);
+    const footer = el('div', {class: 'skill-footer'});
+    const priceSpan = el('span', {class: 'skill-price', text: `$${(s.price_usdc || 0).toFixed(3)}`});
+    priceSpan.appendChild(el('span', {class: 'unit', text: ' USDC/call'}));
+    footer.appendChild(priceSpan);
+    footer.appendChild(el('span', {class: 'skill-try', text: 'Try it →'}));
+    card.appendChild(footer);
+    grid.appendChild(card);
+  }
+}
+
+// ─── Examples wiring ───
+$('examples').querySelectorAll('span').forEach(s => {
+  s.onclick = () => { $('input').value = s.dataset.ex; };
+});
+
+// ─── Run pipeline ───
+$('runBtn').onclick = async () => {
+  const text = $('input').value.trim();
+  if (!text) return;
+  $('runBtn').disabled = true;
+  $('runBtn').textContent = '⏳ Running…';
+  while ($('activity').firstChild) $('activity').removeChild($('activity').firstChild);
+  $('plan').textContent = 'Calling KIMI router…';
+  lastSeenTs = 0;
+
+  try {
+    const r = await fetch(`${ROUTER_URL}/run`, {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({user_input: text}),
+    });
+    const data = await r.json();
+    currentSessionId = data.session_id;
+    $('sessionInfo').textContent = `session ${data.session_id}`;
+  } catch (e) {
+    $('plan').textContent = `Router error: ${e}`;
+    $('runBtn').disabled = false;
+    $('runBtn').textContent = 'Run Pipeline →';
+    return;
+  }
+  pollActivity();
+};
+
+async function pollActivity() {
+  if (!currentSessionId) return;
+  try {
+    const r = await fetch(`${ACTIVITY_URL}/stream/${currentSessionId}?since=${lastSeenTs}`);
+    const data = await r.json();
+    for (const ev of (data.events || [])) {
+      renderEvent(ev);
+      lastSeenTs = Math.max(lastSeenTs, ev.ts || 0);
+      if (ev.kind === 'route_planned') {
+        $('plan').textContent = JSON.stringify({
+          chain: ev.data.skill_chain,
+          reasoning: ev.data.reasoning,
+        }, null, 2);
+      }
+      if (ev.kind === 'skill_completed') {
+        totalCalls += 1; $('statCalls').textContent = totalCalls;
+      }
+      if (ev.kind === 'audit_appended') {
+        totalAudit += 1; $('statChained').textContent = totalAudit;
+      }
+      if (ev.kind === 'session_completed') {
+        $('runBtn').disabled = false;
+        $('runBtn').textContent = 'Run Pipeline →';
+      }
+    }
+  } catch (e) {
+    console.error('poll error', e);
+  }
+  if ($('runBtn').disabled) setTimeout(pollActivity, 500);
+}
+
+function renderEvent(ev) {
+  // Remove empty state if present
+  const empty = $('activity').querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  const ts = new Date((ev.ts || 0) * 1000).toLocaleTimeString();
+  const kindEl = el('span', {class: 'kind', text: (ev.kind || '').replace(/_/g, ' ')});
+
+  const bodyEl = el('span', {class: 'event-body'});
+  if (ev.skill_id) bodyEl.appendChild(el('b', {text: ev.skill_id}));
+  if (ev.data) {
+    const want = new Set(['elapsed_ms','chain_hash','mode','error','total_ms','n_ok','n_skills']);
+    for (const [k, v] of Object.entries(ev.data)) {
+      if (!want.has(k)) continue;
+      const display = typeof v === 'string' ? v.slice(0, 50) : v;
+      bodyEl.appendChild(document.createTextNode(' '));
+      bodyEl.appendChild(el('span', {class: 'event-meta', text: `${k}=${display}`}));
+    }
+  }
+  if (ev.trace_id) {
+    bodyEl.appendChild(document.createTextNode(' '));
+    bodyEl.appendChild(el('span', {class: 'event-meta', text: `trace=${ev.trace_id.slice(0,10)}…`}));
+    const link = el('a', {
+      class: 'event-verify-link', href: '#verify', text: '[verify]',
+      onclick: (e) => {
+        e.preventDefault();
+        $('traceInput').value = ev.trace_id;
+        verifyTrace();
+        $('verify').scrollIntoView({behavior: 'smooth'});
+      },
+    });
+    bodyEl.appendChild(link);
+  }
+
+  const tsEl = el('span', {class: 'event-ts', text: ts});
+  const row = el('div', {class: 'event-row', dataset: {kind: ev.kind || ''}}, [kindEl, bodyEl, tsEl]);
+  $('activity').appendChild(row);
+  $('activity').scrollTop = $('activity').scrollHeight;
+}
+
+// ─── Verify ───
+async function verifyTrace() {
+  const tid = $('traceInput').value.trim();
+  const box = $('verifyResult');
+  if (!tid) {
+    box.className = 'verify-result idle';
+    box.textContent = 'Paste a trace_id first.';
+    return;
+  }
+  while (box.firstChild) box.removeChild(box.firstChild);
+  box.className = 'verify-result idle';
+  box.textContent = '⏳ Verifying…';
+  try {
+    const r = await fetch(`${AUDIT_URL}/verify/${tid}`);
+    if (r.status === 404) {
+      box.className = 'verify-result fail';
+      while (box.firstChild) box.removeChild(box.firstChild);
+      box.appendChild(el('div', {class: 'verify-badge fail', text: '❌ trace_id not found'}));
+      box.appendChild(document.createTextNode('No audit entry exists for this trace_id. Either it was never recorded, or the wrong id was pasted.'));
+      return;
+    }
+    const data = await r.json();
+    const passed = !!data.chain_verified;
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.className = 'verify-result ' + (passed ? 'pass' : 'fail');
+    box.appendChild(el('div', {
+      class: 'verify-badge ' + (passed ? 'pass' : 'fail'),
+      text: passed ? '✓ Chain Verified' : '✗ Chain Tampered',
+    }));
+    const summary = {
+      session_id: data.session_id,
+      n_entries_in_chain: (data.full_chain || []).length,
+      this_entry: data.found_entry && {
+        seq: data.found_entry.seq,
+        skill: data.found_entry.skill_id,
+        chain_hash: (data.found_entry.chain_hash || '').slice(0, 24) + '…',
+      },
+      full_chain: (data.full_chain || []).map(e => ({
+        seq: e.seq, skill: e.skill_id,
+        chain_hash: (e.chain_hash || '').slice(0, 16) + '…',
+      })),
+      errors: data.chain_errors,
+    };
+    box.appendChild(el('pre', {class: 'verify-pre', text: JSON.stringify(summary, null, 2)}));
+  } catch (e) {
+    box.className = 'verify-result fail';
+    box.textContent = `Verify error: ${e.message || e}`;
+  }
+}
+$('verifyBtn').onclick = verifyTrace;
+
+// ─── Boot ───
+loadMarketplace();
+</script>
+</body>
+</html>

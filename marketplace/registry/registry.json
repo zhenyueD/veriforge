@@ -1,0 +1,105 @@
+{
+  "version": "0.1.0",
+  "updated_at": "2026-05-23",
+  "skills": [
+    {
+      "id": "claims-intent",
+      "name": "Claims Intent Classifier",
+      "endpoint": "http://HOST:7001",
+      "description": "Classify customer intent on e-commerce after-sales channel: claim_with_image / claim_text_only / general_inquiry / needs_clarification / followup_on_prior_claim. Extracts order_id via regex+LLM. Multi-turn aware. Recognizes legal-threat-only messages as claims.",
+      "inputs": ["user_message", "has_image", "history"],
+      "outputs": ["label", "order_id", "product_hint", "confidence", "clarification_question"],
+      "price_usdc": 0.01,
+      "tags": ["vertical:ecom-aftersales", "capability:nlp", "capability:intent-classification"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "claims-emotion",
+      "name": "Claims Emotion Grader",
+      "endpoint": "http://HOST:7002",
+      "description": "Grade customer affect on a calibrated 0-10 scale with risk level (LOW/MEDIUM/HIGH/CRITICAL). Detects legal-threat, regulator, media, chargeback, and Nth-time escalation signals. Auto-promotes to CRITICAL whenever any escalation signal fires. Bilingual EN+ZH.",
+      "inputs": ["user_message", "prior_score"],
+      "outputs": ["score", "risk", "label", "triggers", "escalation_signals", "suggested_tone"],
+      "price_usdc": 0.01,
+      "tags": ["vertical:ecom-aftersales", "capability:sentiment", "capability:nlp"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "claims-needs",
+      "name": "Claims Needs Discovery",
+      "endpoint": "http://HOST:7003",
+      "description": "Surface surface/latent/emotional needs from customer message and conversation history. Outputs retention_risk and suggested_offer_bias. Elevates the system from policy executor to advisor — catches context like 'this mug was a birthday gift for Friday'.",
+      "inputs": ["user_message", "history", "emotion"],
+      "outputs": ["surface_need", "latent_need", "emotional_need", "retention_risk", "upsell_signal", "suggested_offer_bias"],
+      "price_usdc": 0.015,
+      "tags": ["vertical:ecom-aftersales", "capability:advisory", "capability:nlp"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "claims-damage-vision",
+      "name": "Claims Damage Vision",
+      "endpoint": "http://HOST:7004",
+      "description": "Assess product damage from a photo using Gemini Vision. Returns damage_type, severity 0-10, affected_parts, normalized bounding_boxes, detected_subject. 96.7% accuracy on labeled eval set. Catches text/image mismatch attacks (e.g. user says 'mug' but image shows phone).",
+      "inputs": ["user_message", "image_b64", "image_mime"],
+      "outputs": ["damage_type", "severity", "affected_parts", "confidence", "reasoning", "evidence_quote", "detected_subject", "bounding_boxes"],
+      "price_usdc": 0.05,
+      "tags": ["vertical:ecom-aftersales", "capability:vision", "capability:gemini", "premium"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "claims-compensation",
+      "name": "Claims Compensation Proposer",
+      "endpoint": "http://HOST:7005",
+      "description": "Pick matching policy from 26-rule policy DSL + RAG over merchant wisdom KB (93 entries) + live precedent. Propose typed offer (full_refund/partial_refund/replacement/store_credit) with empathetic justification.",
+      "inputs": ["damage", "emotion", "has_image", "estimated_value_cents", "user_message", "product_hint", "needs", "history"],
+      "outputs": ["offer", "escalate_reasons"],
+      "price_usdc": 0.03,
+      "tags": ["vertical:ecom-aftersales", "capability:rag", "capability:finance"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "claims-verify",
+      "name": "Claims Offer Verifier",
+      "endpoint": "http://HOST:7006",
+      "description": "Hard-cap proposed offer to policy max (20% emotion flex), escalate to human when damage_confidence < 0.5 and amount > $50, request tone revision if justification too cold. Max 1 revision loop.",
+      "inputs": ["offer", "damage_severity", "damage_confidence", "emotion_score", "user_message"],
+      "outputs": ["verdict", "reason", "revised_offer"],
+      "price_usdc": 0.02,
+      "tags": ["vertical:ecom-aftersales", "capability:verification", "capability:safety"],
+      "llm_compat": ["gemini"]
+    },
+    {
+      "id": "text-summarize",
+      "name": "Text Summarizer",
+      "endpoint": "http://HOST:7011",
+      "description": "Summarize long-form text into structured bullet points with configurable length and style (executive / detailed / casual). Works on any domain.",
+      "inputs": ["text", "max_bullets", "style"],
+      "outputs": ["bullets", "tldr"],
+      "price_usdc": 0.005,
+      "tags": ["horizontal", "capability:nlp"],
+      "llm_compat": ["gemini", "any"]
+    },
+    {
+      "id": "text-translate",
+      "name": "Text Translator",
+      "endpoint": "http://HOST:7012",
+      "description": "Translate text between languages with automatic source language detection. Preserves formatting and domain terminology.",
+      "inputs": ["text", "target_language", "source_language"],
+      "outputs": ["translated_text", "detected_source"],
+      "price_usdc": 0.005,
+      "tags": ["horizontal", "capability:nlp"],
+      "llm_compat": ["gemini", "any"]
+    },
+    {
+      "id": "sentiment-analyze",
+      "name": "Sentiment Analyzer",
+      "endpoint": "http://HOST:7013",
+      "description": "Analyze sentiment of any text into positive/neutral/negative with emotion breakdown and intensity score. Domain-agnostic.",
+      "inputs": ["text"],
+      "outputs": ["sentiment", "intensity", "emotions"],
+      "price_usdc": 0.005,
+      "tags": ["horizontal", "capability:nlp"],
+      "llm_compat": ["gemini", "any"]
+    }
+  ]
+}

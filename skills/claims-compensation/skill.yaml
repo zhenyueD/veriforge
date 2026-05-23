@@ -1,0 +1,60 @@
+id: claims-compensation
+version: 0.1.0
+name: "Claims Compensation Proposer"
+description: >
+  Pick the matching policy from a 26-rule policy DSL + RAG over merchant
+  wisdom KB (93 entries from Amazon/eBay/Shopify/Reddit) + live precedent
+  from learning loop. Propose a typed offer (full_refund / partial_refund /
+  replacement / store_credit) with empathetic justification grounded in
+  damage severity + emotion + customer needs.
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [damage, has_image]
+    properties:
+      damage:
+        type: object
+        description: DamageAssessment output (from claims-damage-vision)
+      emotion:
+        type: [object, "null"]
+        description: Emotion output (from claims-emotion)
+      has_image: { type: boolean }
+      estimated_value_cents: { type: integer, default: 5000 }
+      user_message: { type: string, default: "" }
+      product_hint: { type: [string, "null"] }
+      needs:
+        type: [object, "null"]
+        description: Needs output (from claims-needs)
+      history: { type: array, default: [] }
+
+outputs:
+  schema:
+    type: object
+    properties:
+      offer:
+        type: [object, "null"]
+        properties:
+          offer_type: { type: string, enum: [full_refund, partial_refund, replacement, store_credit] }
+          amount_cents: { type: integer, minimum: 0 }
+          currency: { type: string }
+          justification: { type: string }
+          policy_ids: { type: array, items: { type: string } }
+          requires_return: { type: boolean }
+      escalate_reasons: { type: array, items: { type: string } }
+
+price: { amount_usdc: 0.03, chain: base-sepolia }
+
+verify_hook:
+  module: verify
+  function: verify
+  invariants:
+    - "if offer present, amount_cents <= max policy cap"
+    - "if escalate_reasons non-empty, offer should still be present as candidate"
+    - "amount_cents non-negative"
+
+llm_compat: [gemini, any]
+tags: [vertical:ecom-aftersales, capability:rag, capability:finance]
+reuse_from: { source: claimsforge, agent: compensation_agent, path: /Users/duan/code/claimsforge/agents/compensation_agent.py }

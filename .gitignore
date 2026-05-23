@@ -1,0 +1,30 @@
+.env
+.env.local
+*.pyc
+__pycache__/
+node_modules/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+external/MiroFlow/
+external/*/.git/
+*.log
+.vercel/
+.next/
+trace_logs/
+.gstack/
+
+# Day 0.5 spike tooling
+external/MiroFlow/
+
+# IDE
+.vscode/
+.idea/
+
+# Local test artifacts
+*.bak

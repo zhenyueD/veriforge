@@ -1,0 +1,51 @@
+# SPRINT.md
+
+**当前 sprint 状态。每日开工/下工双方都读 + 更新。**
+
+## Day X — YYYY-MM-DD
+
+### 🎯 今日目标
+- `<TBD — 一句话，能 demo 的产出>`
+
+### 📋 任务
+
+#### 🟢 Done
+- [x] `<task>` — @duan / @ryan — link to PR / commit
+
+#### 🟡 In Progress
+- [ ] `<task>` — @duan — ETA: `<time>` — branch: `<branch>`
+- [ ] `<task>` — @ryan — ETA: `<time>` — branch: `<branch>`
+
+#### 🔴 Blocked
+- [ ] `<task>` — @owner — blocker: `<what>` — need: `<help/decision>`
+
+#### ⚪ Todo (next)
+- [ ] `<task>` — `<待 assign>`
+- [ ] `<task>` — `<待 assign>`
+
+### 🎯 Day-end demo target
+今晚下工前要能演示: `<TBD>`
+
+### 📊 Sponsor 进度
+
+| Sponsor | Owner | 状态 | 子目录 | 评委验证 |
+|---|---|---|---|---|
+| `<A>` | @duan | 🟡 集成中 | `sponsor-a/` | 待写 |
+| `<B>` | @ryan | 🟢 跑通 | `sponsor-b/` | ✅ |
+| `<C>` | @duan | ⚪ 未开始 | - | - |
+
+### ⏰ 状态信号
+
+| 谁 | 状态 | 直到 |
+|---|---|---|
+| @duan | 🟢 deep work | 18:00 |
+| @ryan | 🟡 available | - |
+
+---
+
+## 历史 sprint（保留参考）
+
+### Day X-1 — YYYY-MM-DD
+- 完成: `<list>`
+- 阻塞: `<list>`
+- 关键决策: 见 [DECISIONS.md](./DECISIONS.md#YYYY-MM-DD)

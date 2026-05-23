@@ -1,0 +1,39 @@
+# DECISIONS.md
+
+**Append-only 决策日志。已决定的事不再吵。新决策写顶部。**
+
+## 格式
+
+```
+## YYYY-MM-DD HH:MM — <一句话决策>
+
+**问题**: <一句话上下文>
+
+**选项**:
+- A: <option A> — pros / cons
+- B: <option B> — pros / cons
+
+**决定**: <选 X>
+
+**理由**: <why>
+
+**Owner**: @duan / @ryan / 双方
+**关联**: PR / Issue / SPRINT 链接
+```
+
+---
+
+## 2026-MM-DD HH:MM — 示例决策（删掉）
+
+**问题**: 用 Supabase 还是 Postgres + 手写迁移？
+
+**选项**:
+- A: Supabase — pros: 5 min setup + Realtime / Auth 免费；cons: vendor lock-in
+- B: Postgres + drizzle — pros: 可移植；cons: setup 2-3 小时
+
+**决定**: Supabase
+
+**理由**: hackathon 5 天，setup 时间 > 长期可移植；Realtime 直接给我们 activity stream skill 用
+
+**Owner**: 双方
+**关联**: SPRINT.md Day 1

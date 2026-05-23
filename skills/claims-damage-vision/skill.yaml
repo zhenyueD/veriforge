@@ -1,0 +1,52 @@
+id: claims-damage-vision
+version: 0.1.0
+name: "Claims Damage Vision"
+description: >
+  Assess product damage from a photo using Gemini Vision. Returns damage_type
+  (crack/scratch/tear/dent/stain/missing_part/water_damage/defect/unclear),
+  severity 0-10, affected_parts, normalized bounding_boxes per damage region,
+  detected_subject (what the image shows independent of customer text), and
+  reasoning. 96.7% accuracy on labeled eval set. Catches text/image mismatch
+  attacks (e.g. user says "mug" but image shows phone).
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [user_message]
+    properties:
+      user_message: { type: string, maxLength: 4000 }
+      image_b64: { type: [string, "null"], description: "Base64-encoded image bytes (optional)" }
+      image_mime: { type: string, default: "image/jpeg" }
+
+outputs:
+  schema:
+    type: object
+    required: [damage_type, severity, confidence, reasoning]
+    properties:
+      damage_type:
+        type: string
+        enum: [crack, scratch, tear, dent, stain, missing_part, water_damage, defect, unclear]
+      severity: { type: integer, minimum: 0, maximum: 10 }
+      affected_parts: { type: array, items: { type: string } }
+      confidence: { type: number, minimum: 0, maximum: 1 }
+      reasoning: { type: string }
+      evidence_quote: { type: [string, "null"] }
+      detected_subject: { type: [string, "null"] }
+      bounding_boxes: { type: array }
+
+price: { amount_usdc: 0.05, chain: base-sepolia }   # higher: Vision call costs more
+
+verify_hook:
+  module: verify
+  function: verify
+  invariants:
+    - "severity within [0, 10]"
+    - "confidence within [0, 1]"
+    - "if no image provided, confidence should be <= 0.5"
+    - "damage_type is a valid enum"
+
+llm_compat: [gemini]   # Vision call requires Gemini multimodal
+tags: [vertical:ecom-aftersales, capability:vision, capability:gemini, premium]
+reuse_from: { source: claimsforge, agent: damage_agent, path: /Users/duan/code/claimsforge/agents/damage_agent.py }

@@ -1,0 +1,205 @@
+# VeriForge — all 9 skills + router as independent services
+#
+# Skills share read-only access to ClaimsForge source via volume mount.
+# Each skill auto-installs its (small) deps at container boot for hackathon speed.
+#
+# Run:
+#   docker compose up
+#
+# Smoke:
+#   curl localhost:7001/health   # claims-intent
+#   ...
+#   curl localhost:8000/health   # router
+#   curl -sX POST localhost:8000/route -H 'content-type: application/json' \
+#        -d '{"user_input":"My mug arrived cracked, order ORD-1234"}' | python3 -m json.tool
+
+x-skill-env: &skill-env
+  CLAIMSFORGE_PATH: /claimsforge
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+  GEMINI_TEXT_MODEL: ${GEMINI_TEXT_MODEL:-gemini-2.5-flash}
+  GEMINI_VISION_MODEL: ${GEMINI_VISION_MODEL:-gemini-2.5-flash}
+  PYTHONUNBUFFERED: "1"
+
+x-skill-volumes: &skill-volumes
+  - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+
+x-skill-deps-cmd: &skill-deps-cmd >
+  pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic
+  'google-genai>=0.3' Pillow imagehash
+
+services:
+  # ─── 6 ClaimsForge-derived skills ────────────────────────
+  claims-intent:
+    image: python:3.12-slim
+    container_name: vf-claims-intent
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-intent:/app
+    working_dir: /app
+    ports: ["7001:7001"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7001"]
+
+  claims-emotion:
+    image: python:3.12-slim
+    container_name: vf-claims-emotion
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-emotion:/app
+    working_dir: /app
+    ports: ["7002:7002"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7002"]
+
+  claims-needs:
+    image: python:3.12-slim
+    container_name: vf-claims-needs
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-needs:/app
+    working_dir: /app
+    ports: ["7003:7003"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7003"]
+
+  claims-damage-vision:
+    image: python:3.12-slim
+    container_name: vf-claims-damage-vision
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-damage-vision:/app
+    working_dir: /app
+    ports: ["7004:7004"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7004"]
+
+  claims-compensation:
+    image: python:3.12-slim
+    container_name: vf-claims-compensation
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-compensation:/app
+    working_dir: /app
+    ports: ["7005:7005"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7005"]
+
+  claims-verify:
+    image: python:3.12-slim
+    container_name: vf-claims-verify
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-verify:/app
+    working_dir: /app
+    ports: ["7006:7006"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7006"]
+
+  # ─── 3 horizontal skills ─────────────────────────────────
+  text-summarize:
+    image: python:3.12-slim
+    container_name: vf-text-summarize
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/text-summarize:/app
+    working_dir: /app
+    ports: ["7011:7011"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' && uvicorn handler:app --host 0.0.0.0 --port 7011"]
+
+  text-translate:
+    image: python:3.12-slim
+    container_name: vf-text-translate
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/text-translate:/app
+    working_dir: /app
+    ports: ["7012:7012"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' && uvicorn handler:app --host 0.0.0.0 --port 7012"]
+
+  sentiment-analyze:
+    image: python:3.12-slim
+    container_name: vf-sentiment-analyze
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/sentiment-analyze:/app
+    working_dir: /app
+    ports: ["7013:7013"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' && uvicorn handler:app --host 0.0.0.0 --port 7013"]
+
+  # ─── Router (calls KIMI, doesn't need ClaimsForge) ───────
+  router:
+    image: python:3.12-slim
+    container_name: vf-router
+    restart: unless-stopped
+    environment:
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY}
+      KIMI_BASE: ${KIMI_BASE:-https://api.moonshot.ai/v1}
+      KIMI_MODEL: ${KIMI_MODEL:-moonshot-v1-128k}
+      AUDIT_URL: http://audit:8001
+      ACTIVITY_URL: http://activity:8002
+      ENDPOINT_HOST: docker
+      VERIFORGE_X402_MODE: mock
+      # Keep KIMI through proxy, but bypass for all internal services
+      NO_PROXY: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
+      no_proxy: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./marketplace:/marketplace
+    working_dir: /marketplace/router
+    ports: ["8000:8000"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic && uvicorn main:app --host 0.0.0.0 --port 8000"]
+
+  # ─── Audit chain (SHA-256 hash chain over skill calls) ───
+  audit:
+    image: python:3.12-slim
+    container_name: vf-audit
+    restart: unless-stopped
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./marketplace:/marketplace
+    working_dir: /marketplace/audit
+    ports: ["8001:8001"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic && uvicorn main:app --host 0.0.0.0 --port 8001"]
+
+  # ─── Activity stream (events for live UI) ────────────────
+  activity:
+    image: python:3.12-slim
+    container_name: vf-activity
+    restart: unless-stopped
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./marketplace:/marketplace
+    working_dir: /marketplace/activity
+    ports: ["8002:8002"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic && uvicorn main:app --host 0.0.0.0 --port 8002"]
+
+  # ─── Web UI (vanilla HTML, served by Python) ─────────────
+  web:
+    image: python:3.12-slim
+    container_name: vf-web
+    restart: unless-stopped
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./web:/web
+    working_dir: /web
+    ports: ["3001:3001"]
+    command: ["python", "-m", "http.server", "3001"]

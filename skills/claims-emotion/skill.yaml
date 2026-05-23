@@ -1,0 +1,44 @@
+id: claims-emotion
+version: 0.1.0
+name: "Claims Emotion Grader"
+description: >
+  Grade customer affect on a calibrated 0-10 scale with risk level
+  (LOW / MEDIUM / HIGH / CRITICAL). Detects legal-threat, regulator, media,
+  chargeback, and "Nth time" escalation signals — auto-promotes to CRITICAL
+  whenever any escalation signal fires. Bilingual EN+ZH.
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [user_message]
+    properties:
+      user_message: { type: string, maxLength: 4000 }
+      prior_score: { type: [number, "null"], minimum: 0, maximum: 10 }
+
+outputs:
+  schema:
+    type: object
+    required: [score, risk, label]
+    properties:
+      score: { type: number, minimum: 0, maximum: 10 }
+      risk: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+      label: { type: string }
+      triggers: { type: array, items: { type: string } }
+      escalation_signals: { type: array, items: { type: string } }
+      suggested_tone: { type: string }
+
+price: { amount_usdc: 0.01, chain: base-sepolia }
+
+verify_hook:
+  module: verify
+  function: verify
+  invariants:
+    - "score within [0, 10]"
+    - "risk is a valid EmotionRisk enum"
+    - "if escalation_signals non-empty, risk must be CRITICAL"
+
+llm_compat: [gemini, any]
+tags: [vertical:ecom-aftersales, capability:sentiment, capability:nlp]
+reuse_from: { source: claimsforge, agent: emotion_agent, path: /Users/duan/code/claimsforge/agents/emotion_agent.py }

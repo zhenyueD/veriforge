@@ -1,0 +1,31 @@
+id: text-summarize
+version: 0.1.0
+name: "Text Summarizer"
+description: >
+  Summarize long-form text into structured bullet points with configurable
+  length and style (executive / detailed / casual). Works on any domain.
+  Horizontal skill — proves VeriForge marketplace is not insurance-locked.
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [text]
+    properties:
+      text: { type: string, minLength: 1, maxLength: 50000 }
+      max_bullets: { type: integer, minimum: 1, maximum: 20, default: 5 }
+      style: { type: string, enum: [executive, detailed, casual], default: executive }
+
+outputs:
+  schema:
+    type: object
+    required: [bullets, tldr]
+    properties:
+      bullets: { type: array, items: { type: string } }
+      tldr: { type: string }
+
+price: { amount_usdc: 0.005, chain: base-sepolia }
+verify_hook: { module: verify, function: verify, invariants: ["bullets non-empty", "tldr non-empty"] }
+llm_compat: [gemini, any]
+tags: [horizontal, capability:nlp]

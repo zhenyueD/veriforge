@@ -1,0 +1,30 @@
+id: text-translate
+version: 0.1.0
+name: "Text Translator"
+description: >
+  Translate text between languages with automatic source language detection.
+  Preserves formatting and domain terminology. Horizontal skill.
+
+owner: { name: "Duan Zhenyue", contact: "duanzhenyue@gmail.com", wallet: "0x0000000000000000000000000000000000000001" }
+
+inputs:
+  schema:
+    type: object
+    required: [text, target_language]
+    properties:
+      text: { type: string, minLength: 1, maxLength: 50000 }
+      target_language: { type: string, description: "ISO 639-1 code or English name" }
+      source_language: { type: [string, "null"], description: "Optional override; auto-detected by default" }
+
+outputs:
+  schema:
+    type: object
+    required: [translated_text]
+    properties:
+      translated_text: { type: string }
+      detected_source: { type: [string, "null"] }
+
+price: { amount_usdc: 0.005, chain: base-sepolia }
+verify_hook: { module: verify, function: verify, invariants: ["translated_text non-empty", "translated_text != input text"] }
+llm_compat: [gemini, any]
+tags: [horizontal, capability:nlp]
