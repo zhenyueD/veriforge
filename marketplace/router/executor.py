@@ -19,6 +19,8 @@ import hashlib, json, os, subprocess, sys, time, textwrap, urllib.request, uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
+import obs  # optional Langfuse tracing; no-op when not configured
+
 PY  = sys.executable or "/Users/duan/code/claimsforge/.venv/bin/python"
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SKILLS_DIR = os.path.join(ROOT, "skills")
@@ -74,6 +76,7 @@ class StepResult:
     output: dict = field(default_factory=dict)
     error: str = ""
     elapsed_ms: int = 0
+    settlement: dict = field(default_factory=dict)  # real x402 split from X-Payment-Settled
 
 
 @dataclass
@@ -207,8 +210,16 @@ def _exec_http(skill_id: str, payload: dict, endpoint: str, timeout: int = 60,
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             out = json.loads(r.read().decode("utf-8"))
+            settled_hdr = r.headers.get("X-Payment-Settled", "")
         elapsed = int((time.time() - t0) * 1000)
-        return StepResult(skill_id=skill_id, ok=True, output=out, elapsed_ms=elapsed)
+        settlement = {}
+        if settled_hdr:
+            try:
+                settlement = json.loads(settled_hdr)
+            except json.JSONDecodeError:
+                settlement = {}
+        return StepResult(skill_id=skill_id, ok=True, output=out,
+                          elapsed_ms=elapsed, settlement=settlement)
     except urllib.error.HTTPError as e:
         elapsed = int((time.time() - t0) * 1000)
         body_err = e.read().decode("utf-8", errors="replace")[:300] if hasattr(e, "read") else ""
@@ -271,14 +282,15 @@ def execute_plan(
 
         emit_event(session_id, "skill_started", skill_id=sid, data={"seq": seq})
 
-        # x402 payment dance (mock by default)
-        if mode == "http":
-            x_pay = _mock_x_payment(sid)
-            emit_event(session_id, "skill_payment_settled", skill_id=sid,
-                       data={"mode": X402_MODE, "token": x_pay[:32]})
-            step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""), x_payment=x_pay)
-        else:
-            step = _exec_in_process(sid, payload)
+        # x402 payment dance: send X-Payment so the skill's gate lets us in, then
+        # read the real settlement (split) the skill returns in X-Payment-Settled.
+        # Each skill call is its own Langfuse span (latency per skill).
+        with obs.span(name=f"skill:{sid}"):
+            if mode == "http":
+                x_pay = _mock_x_payment(sid)
+                step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""), x_payment=x_pay)
+            else:
+                step = _exec_in_process(sid, payload)
 
         steps.append(step)
 
@@ -287,12 +299,25 @@ def execute_plan(
             trace_id = step.output.get("trace_id", uuid.uuid4().hex)
             input_hash  = step.output.get("input_hash")  or hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
             output_hash = step.output.get("output_hash") or hashlib.sha256(json.dumps(step.output, sort_keys=True, default=str).encode()).hexdigest()
+
+            # Emit the real payment settlement (creator cut + platform fee).
+            if step.settlement:
+                emit_event(session_id, "skill_payment_settled", skill_id=sid, trace_id=trace_id,
+                           data={
+                               "mode": step.settlement.get("mode", X402_MODE),
+                               "creator_amount": step.settlement.get("creator_amount"),
+                               "platform_fee": step.settlement.get("platform_fee"),
+                               "pay_to": step.settlement.get("pay_to"),
+                               "txid": (step.settlement.get("txid") or "")[:18],
+                           })
+
             emit_event(session_id, "skill_completed", skill_id=sid, trace_id=trace_id,
                        data={"elapsed_ms": step.elapsed_ms})
             audit_res = append_audit(
                 session_id=session_id, seq=seq, skill_id=sid, trace_id=trace_id,
                 input_hash=input_hash, output_hash=output_hash,
                 verify_passed=None, elapsed_ms=step.elapsed_ms,
+                extra={"settlement": step.settlement} if step.settlement else None,
             )
             if audit_res:
                 emit_event(session_id, "audit_appended", skill_id=sid, trace_id=trace_id,

@@ -13,6 +13,15 @@ from schemas import CompensationOffer, OfferType  # type: ignore
 
 app = FastAPI(title="claims-verify skill", version="0.1.0")
 
+# ── VeriForge: monetize this skill in one line ──
+# x402 pay-per-call (per-creator payout + platform fee split) + marketplace listing.
+# The SDK lives at /sdk in containers, ./sdk on host.
+import os as _os, sys as _sys
+_sys.path.insert(0, "/sdk")
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "sdk"))
+from veriforge import monetize  # noqa: E402
+monetize(app, skill_id="claims-verify", price_usdc=0.02, pay_to="0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1", self_register=False)
+
 
 class OfferIn(BaseModel):
     offer_type: str

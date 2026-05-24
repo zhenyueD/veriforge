@@ -15,6 +15,8 @@ import json, os, time, urllib.request
 from dataclasses import dataclass, field
 from typing import Optional
 
+import obs  # optional Langfuse tracing; no-op when not configured
+
 
 KIMI_BASE  = os.getenv("KIMI_BASE",  "https://api.moonshot.ai/v1")
 KIMI_MODEL = os.getenv("KIMI_MODEL", "moonshot-v1-128k")
@@ -113,16 +115,44 @@ def _call_kimi(prompt: str, system: str = ROUTER_SYSTEM, *, timeout: int = 60) -
     return data["choices"][0]["message"]["content"], data.get("usage", {})
 
 
-def load_registry(registry_path: Optional[str] = None) -> dict:
-    if not registry_path:
-        registry_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "registry", "registry.json",
-        )
-    with open(registry_path) as f:
+def registry_path(path: Optional[str] = None) -> str:
+    return path or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "registry", "registry.json",
+    )
+
+
+def load_registry(path: Optional[str] = None) -> dict:
+    with open(registry_path(path)) as f:
         return json.load(f)
 
 
+def save_registry(registry: dict, path: Optional[str] = None) -> None:
+    import datetime
+    registry["updated_at"] = datetime.date.today().isoformat()
+    with open(registry_path(path), "w") as f:
+        json.dump(registry, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def upsert_skill(manifest: dict, path: Optional[str] = None) -> tuple[dict, bool]:
+    """
+    Insert or update a skill in the registry by id. Returns (skill, created).
+    Self-registration entrypoint for the veriforge SDK and the "List your skill" form.
+    """
+    reg = load_registry(path)
+    skills = reg.setdefault("skills", [])
+    for i, s in enumerate(skills):
+        if s["id"] == manifest["id"]:
+            skills[i] = {**s, **manifest}   # merge: keep existing fields, override provided
+            save_registry(reg, path)
+            return skills[i], False
+    skills.append(manifest)
+    save_registry(reg, path)
+    return manifest, True
+
+
+@obs.observe(name="kimi-router", as_type="generation")
 def plan_skill_chain(user_input: str, registry: Optional[dict] = None) -> SkillPlan:
     if registry is None:
         registry = load_registry()
@@ -158,6 +188,17 @@ def plan_skill_chain(user_input: str, registry: Optional[dict] = None) -> SkillP
         )
 
     chain = [SkillCall(skill_id=c["skill_id"], reason=c.get("reason", "")) for c in parsed.get("skill_chain", [])]
+
+    # Record the KIMI call as a Langfuse generation (model + tokens → cost/latency).
+    obs.update_generation(
+        model=KIMI_MODEL,
+        usage_details={
+            "input": usage.get("prompt_tokens", 0),
+            "output": usage.get("completion_tokens", 0),
+        },
+        output={"skill_chain": [c.skill_id for c in chain], "reasoning": parsed.get("reasoning", "")},
+    )
+
     return SkillPlan(
         skill_chain=chain,
         input_summary=parsed.get("input_summary", ""),

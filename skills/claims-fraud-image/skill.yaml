@@ -1,0 +1,50 @@
+id: claims-fraud-image
+version: 0.1.0
+name: "Claims Fraud Image Check"
+description: >
+  Deterministic image-provenance fraud check for claim photos (no LLM). Perceptual-hash
+  (pHash) collision detection catches re-used / recycled photos across sessions — the
+  high-confidence fraud signal. EXIF age check catches stale photos submitted for a
+  "just arrived broken" claim. Composes both into fraud_score (0-1), verdict
+  (clear/suspicious/fraud), and the signals that fired.
+
+owner: { name: "ClaimsForge Labs", contact: "duanzhenyue@gmail.com", wallet: "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1" }
+
+inputs:
+  schema:
+    type: object
+    required: []
+    properties:
+      image_b64: { type: [string, "null"], description: "Base64-encoded image bytes" }
+      image_mime: { type: string, default: "image/jpeg" }
+      session_id: { type: string, default: "anon", description: "Used to flag cross-session photo reuse" }
+      user_message: { type: string, maxLength: 4000 }
+
+outputs:
+  schema:
+    type: object
+    required: [fraud_score, verdict, signals, exif, collision_found]
+    properties:
+      phash: { type: [string, "null"] }
+      exif: { type: object }
+      collision_found: { type: boolean }
+      collision_distance: { type: [integer, "null"] }
+      cross_session: { type: boolean }
+      fraud_score: { type: number, minimum: 0, maximum: 1 }
+      verdict: { type: string, enum: [clear, suspicious, fraud] }
+      signals: { type: array, items: { type: string } }
+
+price: { amount_usdc: 0.04, chain: base-sepolia }
+
+verify_hook:
+  module: verify
+  function: verify
+  invariants:
+    - "fraud_score within [0, 1]"
+    - "verdict is a valid enum"
+    - "cross_session collision implies fraud_score >= 0.6"
+    - "no image provided -> 'no_image_provided' in signals"
+
+llm_compat: [any]   # deterministic — no LLM call, runs anywhere
+tags: [vertical:ecom-aftersales, capability:fraud-detection, capability:vision, capability:safety]
+reuse_from: { source: claimsforge, agent: fraud, path: /Users/duan/code/claimsforge/agents/fraud.py }

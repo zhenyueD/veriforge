@@ -12,6 +12,15 @@ from gemini_client import chat, GeminiError  # type: ignore
 
 app = FastAPI(title="text-summarize skill", version="0.1.0")
 
+# ── VeriForge: monetize this skill in one line ──
+# x402 pay-per-call (per-creator payout + platform fee split) + marketplace listing.
+# The SDK lives at /sdk in containers, ./sdk on host.
+import os as _os, sys as _sys
+_sys.path.insert(0, "/sdk")
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "sdk"))
+from veriforge import monetize  # noqa: E402
+monetize(app, skill_id="text-summarize", price_usdc=0.005, pay_to="0x49c34f8cc150ceaf78953b7aa4ad261136d2f839", self_register=False)
+
 
 class InvokeRequest(BaseModel):
     text: str = Field(min_length=1, max_length=50000)
