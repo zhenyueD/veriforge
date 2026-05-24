@@ -15,6 +15,8 @@ import json, os, time, urllib.request
 from dataclasses import dataclass, field
 from typing import Optional
 
+import obs  # optional Langfuse tracing; no-op when not configured
+
 
 KIMI_BASE  = os.getenv("KIMI_BASE",  "https://api.moonshot.ai/v1")
 KIMI_MODEL = os.getenv("KIMI_MODEL", "moonshot-v1-128k")
@@ -150,6 +152,7 @@ def upsert_skill(manifest: dict, path: Optional[str] = None) -> tuple[dict, bool
     return manifest, True
 
 
+@obs.observe(name="kimi-router", as_type="generation")
 def plan_skill_chain(user_input: str, registry: Optional[dict] = None) -> SkillPlan:
     if registry is None:
         registry = load_registry()
@@ -185,6 +188,17 @@ def plan_skill_chain(user_input: str, registry: Optional[dict] = None) -> SkillP
         )
 
     chain = [SkillCall(skill_id=c["skill_id"], reason=c.get("reason", "")) for c in parsed.get("skill_chain", [])]
+
+    # Record the KIMI call as a Langfuse generation (model + tokens → cost/latency).
+    obs.update_generation(
+        model=KIMI_MODEL,
+        usage_details={
+            "input": usage.get("prompt_tokens", 0),
+            "output": usage.get("completion_tokens", 0),
+        },
+        output={"skill_chain": [c.skill_id for c in chain], "reasoning": parsed.get("reasoning", "")},
+    )
+
     return SkillPlan(
         skill_chain=chain,
         input_summary=parsed.get("input_summary", ""),

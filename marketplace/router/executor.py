@@ -19,6 +19,8 @@ import hashlib, json, os, subprocess, sys, time, textwrap, urllib.request, uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
+import obs  # optional Langfuse tracing; no-op when not configured
+
 PY  = sys.executable or "/Users/duan/code/claimsforge/.venv/bin/python"
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SKILLS_DIR = os.path.join(ROOT, "skills")
@@ -282,11 +284,13 @@ def execute_plan(
 
         # x402 payment dance: send X-Payment so the skill's gate lets us in, then
         # read the real settlement (split) the skill returns in X-Payment-Settled.
-        if mode == "http":
-            x_pay = _mock_x_payment(sid)
-            step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""), x_payment=x_pay)
-        else:
-            step = _exec_in_process(sid, payload)
+        # Each skill call is its own Langfuse span (latency per skill).
+        with obs.span(name=f"skill:{sid}"):
+            if mode == "http":
+                x_pay = _mock_x_payment(sid)
+                step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""), x_payment=x_pay)
+            else:
+                step = _exec_in_process(sid, payload)
 
         steps.append(step)
 

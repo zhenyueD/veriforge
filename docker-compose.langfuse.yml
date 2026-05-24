@@ -1,0 +1,116 @@
+# VeriForge — OPT-IN Langfuse observability stack (NOT part of the main 13-container stack).
+# Secrets below are DEV-ONLY (local self-host encryption keys, regenerate for prod).
+# Enable tracing: bring this up, then set LANGFUSE_* on the router (see LANGFUSE.md).
+# Langfuse self-host minimal docker-compose
+# 5 分钟起一套：langfuse-web + langfuse-worker + postgres + clickhouse + redis + minio
+# 启动：docker compose -f docker-compose.langfuse.yml up -d
+# 访问：http://localhost:3000  (首次进去注册 admin 账号 → create project → 拿 pk/sk key)
+# 注意：所有 infra 必须 UTC 时区；生产前务必把下面 *_SECRET / *_KEY 全部替换
+
+services:
+  langfuse-web:
+    image: langfuse/langfuse:latest
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_AUTH: redis
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: jtRYtuyYvgxCM+BZoW7H5ilW8xLtLMnj
+      SALT: 60ta2EJd/ipOl/co21l0M4ddPiwwYWmz
+      ENCRYPTION_KEY: 885996beba30a40371d4a102339e77c24f691c9d9ffe93efc38a1a5a9200389d  # 64 hex chars; openssl rand -hex 32
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:latest
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_AUTH: redis
+      SALT: 60ta2EJd/ipOl/co21l0M4ddPiwwYWmz
+      ENCRYPTION_KEY: 885996beba30a40371d4a102339e77c24f691c9d9ffe93efc38a1a5a9200389d
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      TZ: UTC
+    volumes: ["langfuse_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 10
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      TZ: UTC
+    volumes: ["langfuse_ch:/var/lib/clickhouse"]
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    command: --requirepass redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis", "ping"]
+      interval: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    volumes: ["langfuse_minio:/data"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  langfuse_pg:
+  langfuse_ch:
+  langfuse_minio:
