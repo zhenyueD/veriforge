@@ -235,6 +235,45 @@ def _mock_x_payment(skill_id: str) -> str:
     return "mock:" + hashlib.sha256(f"{skill_id}:{uuid.uuid4()}".encode()).hexdigest()
 
 
+_VERIFY_CACHE: dict = {}
+
+
+def _load_skill_verify(skill_id: str):
+    """
+    Load a skill's verify(input, output) hook from skills/<id>/verify.py (mounted at
+    /skills in the router container). Cached. Returns None if absent/unloadable —
+    trust scoring is best-effort and never blocks execution.
+    """
+    if skill_id in _VERIFY_CACHE:
+        return _VERIFY_CACHE[skill_id]
+    fn = None
+    try:
+        import importlib.util
+        path = os.path.join(SKILLS_DIR, skill_id, "verify.py")
+        if os.path.exists(path):
+            name = f"verify_{skill_id.replace('-', '_')}"
+            spec = importlib.util.spec_from_file_location(name, path)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod  # register so dataclass annotations resolve
+            spec.loader.exec_module(mod)
+            fn = getattr(mod, "verify", None)
+    except Exception:  # noqa: BLE001 — best-effort
+        fn = None
+    _VERIFY_CACHE[skill_id] = fn
+    return fn
+
+
+def _run_verify(skill_id: str, payload: dict, output: dict) -> tuple[Optional[bool], Optional[float]]:
+    fn = _load_skill_verify(skill_id)
+    if not fn:
+        return None, None
+    try:
+        vr = fn(payload, output)
+        return bool(vr.passed), float(vr.trust_score)
+    except Exception:  # noqa: BLE001
+        return None, None
+
+
 # ─── Public entry point ───────────────────────────────────
 def execute_plan(
     plan: dict | list,
@@ -311,13 +350,22 @@ def execute_plan(
                                "txid": (step.settlement.get("txid") or "")[:18],
                            })
 
+            # Run the skill's own invariant hook → per-call trust score.
+            verify_passed, trust_score = _run_verify(sid, payload, step.output)
+
             emit_event(session_id, "skill_completed", skill_id=sid, trace_id=trace_id,
-                       data={"elapsed_ms": step.elapsed_ms})
+                       data={"elapsed_ms": step.elapsed_ms,
+                             "verify_passed": verify_passed, "trust_score": trust_score})
+            extra = {}
+            if step.settlement:
+                extra["settlement"] = step.settlement
+            if trust_score is not None:
+                extra["trust_score"] = trust_score
             audit_res = append_audit(
                 session_id=session_id, seq=seq, skill_id=sid, trace_id=trace_id,
                 input_hash=input_hash, output_hash=output_hash,
-                verify_passed=None, elapsed_ms=step.elapsed_ms,
-                extra={"settlement": step.settlement} if step.settlement else None,
+                verify_passed=verify_passed, elapsed_ms=step.elapsed_ms,
+                extra=extra or None,
             )
             if audit_res:
                 emit_event(session_id, "audit_appended", skill_id=sid, trace_id=trace_id,
