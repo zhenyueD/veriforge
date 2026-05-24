@@ -107,6 +107,19 @@ services:
     ports: ["7006:7006"]
     command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7006"]
 
+  claims-fraud-image:
+    image: python:3.12-slim
+    container_name: vf-claims-fraud-image
+    restart: unless-stopped
+    environment: *skill-env
+    volumes:
+      - ${CLAIMSFORGE_PATH}:/claimsforge:ro
+      - ./skills/claims-fraud-image:/app
+      - ./sdk:/sdk:ro
+    working_dir: /app
+    ports: ["7007:7007"]
+    command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic Pillow imagehash && uvicorn handler:app --host 0.0.0.0 --port 7007"]
+
   # ─── 3 horizontal skills ─────────────────────────────────
   text-summarize:
     image: python:3.12-slim

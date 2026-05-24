@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "updated_at": "2026-05-24",
   "skills": [
     {
@@ -176,6 +176,39 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1"
+    },
+    {
+      "id": "claims-fraud-image",
+      "name": "Claims Fraud Image Check",
+      "endpoint": "http://HOST:7007",
+      "description": "Deterministic image-provenance fraud check (no LLM): pHash collision detection catches re-used/recycled claim photos across sessions; EXIF age check catches stale photos for a 'just arrived broken' claim. Returns fraud_score 0-1, verdict (clear/suspicious/fraud), and the signals that fired.",
+      "inputs": [
+        "image_b64",
+        "image_mime",
+        "session_id",
+        "user_message"
+      ],
+      "outputs": [
+        "phash",
+        "exif",
+        "collision_found",
+        "collision_distance",
+        "cross_session",
+        "fraud_score",
+        "verdict",
+        "signals"
+      ],
+      "price_usdc": 0.04,
+      "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
+      "tags": [
+        "vertical:ecom-aftersales",
+        "capability:fraud-detection",
+        "capability:vision",
+        "capability:safety"
+      ],
+      "llm_compat": [
+        "any"
+      ]
     },
     {
       "id": "text-summarize",
