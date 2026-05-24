@@ -160,6 +160,22 @@ services:
     ports: ["7013:7013"]
     command: ["bash", "-c", "pip install --quiet --no-cache-dir fastapi 'uvicorn[standard]' pydantic 'google-genai>=0.3' && uvicorn handler:app --host 0.0.0.0 --port 7013"]
 
+  # ─── Deep Research (MiroMind MiroFlow, built image) ──────
+  deep-research:
+    build:
+      context: .
+      dockerfile: skills/deep-research/Dockerfile
+    container_name: vf-deep-research
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SERPER_API_KEY: ${SERPER_API_KEY}
+      JINA_API_KEY: ${JINA_API_KEY}
+      MIROFLOW_CONFIG: ${MIROFLOW_CONFIG:-agent_llm_gpt4o}
+      MIROFLOW_TIMEOUT: "300"
+      PYTHONUNBUFFERED: "1"
+    ports: ["7008:7008"]
+
   # ─── Router (calls KIMI, doesn't need ClaimsForge) ───────
   router:
     image: python:3.12-slim

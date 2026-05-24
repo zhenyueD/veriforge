@@ -6,7 +6,7 @@
 
 ## Elevator pitch (3 sentences)
 
-VeriForge is the **App Store for verifiable AI skills**: any FastAPI skill adds **one line** (`monetize(...)`) to get x402 pay-per-call billing — payment routes to the creator's wallet minus a transparent platform fee — and self-registers onto the marketplace. A **KIMI 256k registry-in-context router** plans a skill chain for any input (no RAG), an executor runs the chain paying per call, and every invocation plus its revenue split is written into a tamper-evident **SHA-256 audit chain** anyone can re-verify. The 10 live skills are the dissected agents of ClaimsForge (a prior hackathon project) reborn as composable, monetizable marketplace goods.
+VeriForge is the **App Store for verifiable AI skills**: any FastAPI skill adds **one line** (`monetize(...)`) to get x402 pay-per-call billing — payment routes to the creator's wallet minus a transparent platform fee — and self-registers onto the marketplace. A **KIMI 256k registry-in-context router** plans a skill chain for any input (no RAG), an executor runs the chain paying per call, and every invocation plus its revenue split is written into a tamper-evident **SHA-256 audit chain** anyone can re-verify. The skills span the dissected agents of ClaimsForge (a prior hackathon project) reborn as composable goods, plus a `deep-research` skill that runs **MiroMind's MiroFlow** agent with its step trace hash-chained — 11 skills total.
 
 ## Why this submission should score well
 
@@ -17,6 +17,7 @@ VeriForge is the **App Store for verifiable AI skills**: any FastAPI skill adds 
 | External author self-registration (supply side) | `examples/external-skill/` (`run-demo.sh` boots a 3rd-party skill → 10→11 live) |
 | KIMI registry-in-context routing (no RAG) | `marketplace/router/router.py` (`ROUTER_PROMPT_TPL`, `_call_kimi`) |
 | Tamper-evident audit chain + public verify | `marketplace/audit/chain.py`, `marketplace/audit/main.py` (`/verify/:tid`) |
+| MiroMind MiroFlow run as a real skill + chained trace | `skills/deep-research/handler.py` (runs MiroFlow, SHA-256-chains its step trace) |
 | Audit chain doubles as a **revenue ledger** | executor writes `extra.settlement` (creator/platform) per call |
 | Gemini 2.5 Flash + Vision inference | `skills/claims-damage-vision/handler.py`, `skills/claims-*/handler.py` |
 | Opt-in production observability | `marketplace/router/obs.py` + `docker-compose.langfuse.yml` + `LANGFUSE.md` |
@@ -118,11 +119,21 @@ curl -sX POST localhost:8000/route -H 'content-type: application/json' \
 # → skill_chain: [text-translate] — proves the marketplace is not vertical-locked
 ```
 
-### Best Use of MiroMind (verification-centric)
+### Best Use of MiroMind (MiroFlow framework + verifiability)
 
-**What we use**: MiroMind's verifiability principle → a public `/verify/:trace_id` endpoint over a tamper-evident SHA-256 hash chain. Anyone, not just the operator, can re-derive every hash. As of Day 4 each entry also carries the call's **revenue split**, so the same chain is a verifiable payout ledger.
-**Why it's necessary**: a marketplace that bills per call needs third-party-verifiable proof of what ran and who got paid — otherwise "pay-per-call" is unauditable trust-me.
-**Where to look**: `marketplace/audit/chain.py`, `marketplace/audit/main.py`.
+**What we use**: two layers.
+1. **MiroFlow framework, really run**: the `deep-research` skill (`skills/deep-research/`) wraps MiroMind's MiroFlow multi-step research agent (SOTA on GAIA/FutureX/HLE) as a live marketplace skill — it plans a research trajectory, searches the web (serper), reads pages (jina), and returns a boxed answer. This is a real subprocess run of MiroFlow's framework, not a logo.
+2. **MiroFlow trace → cryptographic verifiability**: every MiroFlow step is SHA-256 hash-chained (`handler._chain_trace`) into a tamper-evident `trace_chain` + tip hash, and the broader marketplace audit chain (`marketplace/audit/`) gives a public `/verify/:trace_id` that doubles as a revenue ledger.
+**Why it's necessary**: MiroFlow brings SOTA reproducible research; VeriForge makes that trajectory independently verifiable and pay-per-call. The combination — MiroMind's reproducibility + our cryptographic verifiability — is the point.
+**Where to look**: `skills/deep-research/handler.py` (runs MiroFlow + chains its trace), `external/MiroFlow/` (the framework, cloned via `skills/deep-research/setup.sh`), `marketplace/audit/chain.py`.
+
+Verify (opt-in — needs `bash skills/deep-research/setup.sh` + OPENAI/SERPER/JINA keys, then `docker compose build deep-research && docker compose up -d deep-research`):
+```bash
+curl -sX POST localhost:7008/invoke -H 'content-type: application/json' -H 'X-Payment: mock:demo' \
+  -d '{"task":"Who is the current PM of Singapore and what year did they take office?"}' \
+  | python3 -c 'import sys,json;d=json.load(sys.stdin);print("answer:",d["answer"]);print("verifiable trace links:",len(d["trace_chain"]),"tip:",d["trace_chain_tip"][:16])'
+# → real MiroFlow web research + a SHA-256-chained, tamper-evident step trace
+```
 
 ```bash
 # (run check #3 above to get $SID, then)

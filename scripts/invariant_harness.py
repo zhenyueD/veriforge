@@ -57,6 +57,12 @@ FIXTURES = {
         ({}, {"sentiment": "positive", "intensity": 0.8}),
         ({}, {"sentiment": "happy", "intensity": 2}),
     ),
+    "deep-research": (
+        ({"task": "x"}, {"status": "completed", "answer": "Singapore, 6.12M", "n_steps": 3,
+                         "trace_chain_tip": "a" * 64, "trace_chain": [{}, {}, {}]}),
+        ({"task": "x"}, {"status": "completed", "answer": "", "n_steps": 0,
+                         "trace_chain_tip": "xyz", "trace_chain": []}),
+    ),
 }
 
 

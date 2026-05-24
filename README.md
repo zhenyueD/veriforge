@@ -27,14 +27,14 @@ monetize(app, skill_id="my-skill", price_usdc=0.02, pay_to="0xYourWallet")
 ## Sponsor tracks
 
 - **KIMI (Moonshot)** — `moonshot-v1-128k` holds the whole skill registry in-context to plan chains with no RAG. → [`marketplace/router/router.py`](./marketplace/router/router.py)
-- **MiroMind** — public `/verify/:trace_id` over a tamper-evident SHA-256 chain that doubles as a revenue ledger. → [`marketplace/audit/`](./marketplace/audit/)
+- **MiroMind** — the `deep-research` skill runs MiroMind's **MiroFlow** agent, and its step trace is SHA-256 hash-chained into a verifiable trace; the marketplace audit chain gives a public `/verify/:trace_id`. → [`skills/deep-research/`](./skills/deep-research/), [`marketplace/audit/`](./marketplace/audit/)
 - **Google Cloud + Gemini** — Gemini 2.5 Flash + Vision power the 10 skills' inference. → [`skills/claims-damage-vision/handler.py`](./skills/claims-damage-vision/handler.py)
 
 Per-sponsor verify commands: **[`JUDGING.md`](./JUDGING.md)**.
 
 ## What's inside
 
-- **10 monetized skills** (`skills/`) — 7 ClaimsForge-derived (intent, emotion, needs, damage-vision, compensation, verify, fraud-image) + 3 horizontal (summarize, translate, sentiment)
+- **11 monetized skills** (`skills/`) — 7 ClaimsForge-derived (intent, emotion, needs, damage-vision, compensation, verify, fraud-image) + 3 horizontal (summarize, translate, sentiment) + `deep-research` (runs MiroMind MiroFlow; opt-in, see [`skills/deep-research/setup.sh`](./skills/deep-research/setup.sh))
 - **Monetize SDK** (`sdk/veriforge.py`) — the single file an author copies; x402 gate + fee split + self-registration
 - **Router + executor** (`marketplace/router/`) — KIMI planning, per-call payment, opt-in Langfuse tracing
 - **Audit + activity** (`marketplace/audit/`, `marketplace/activity/`) — SHA-256 chain (+ revenue ledger) and live event stream

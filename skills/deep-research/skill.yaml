@@ -1,0 +1,47 @@
+id: deep-research
+version: 0.1.0
+name: "Deep Research (MiroFlow)"
+description: >
+  Multi-step internet research agent powered by MiroMind's MiroFlow framework
+  (SOTA on GAIA/FutureX/HLE benchmarks). Plans and executes a research trajectory
+  over web search + page reading + Wikipedia, cross-references sources, and returns
+  a boxed answer. Every MiroFlow step is SHA-256 hash-chained into a tamper-evident,
+  independently verifiable research trace — MiroMind's reproducibility meets
+  VeriForge's verifiability.
+
+owner: { name: "VeriForge x MiroMind", contact: "duanzhenyue@gmail.com", wallet: "0x-derived-miromind-research" }
+
+inputs:
+  schema:
+    type: object
+    required: [task]
+    properties:
+      task: { type: string, maxLength: 4000, description: "The research question." }
+      task_file: { type: string, description: "Optional path to a file to ground the research." }
+
+outputs:
+  schema:
+    type: object
+    required: [answer, status, n_steps, trace_chain_tip]
+    properties:
+      answer: { type: string }
+      status: { type: string, enum: [completed, timeout, trace_parse_error, failed] }
+      n_steps: { type: integer }
+      trace_chain_tip: { type: string, description: "Tip hash of the verifiable MiroFlow step chain" }
+      trace_chain: { type: array, description: "Per-step SHA-256 hash chain" }
+      engine: { type: string }
+
+price: { amount_usdc: 0.25, chain: base-sepolia }   # premium: real multi-step web research
+
+verify_hook:
+  module: verify
+  function: verify
+  invariants:
+    - "status is a valid enum"
+    - "trace_chain_tip is a 64-char SHA-256"
+    - "trace_chain length matches n_steps"
+    - "completed run has a non-empty answer and >=1 traced step"
+
+llm_compat: [openai, gemini]   # via MiroFlow provider clients
+tags: [horizontal, capability:research, capability:web-search, capability:verifiable, sponsor:miromind, premium]
+reuse_from: { source: miromind, framework: miroflow, path: external/MiroFlow }
