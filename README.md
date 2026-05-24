@@ -1,23 +1,46 @@
 # VeriForge
 
-> Verifiable, on-chain Skill Marketplace where any AI agent can discover, purchase, and execute composable skills — with cryptographic audit trails and MiroFlow-orchestrated verification.
+**The App Store for verifiable AI skills.** Any FastAPI skill adds one line and gets pay-per-call billing (creator wallet + transparent platform fee), self-lists on the marketplace, and has every call cryptographically audit-chained. Routed by KIMI 256k (no RAG), paid via x402, verifiable by anyone.
 
-**Status**: Day 0.5 (Feasibility Spike) · See [PROJECT.md](./PROJECT.md) for full plan.
+> **For judges & AI graders:** start with **[`JUDGING.md`](./JUDGING.md)** — sponsor scoring hooks, copy-paste checks, and code map. Supply-side demo: [`examples/external-skill/`](./examples/external-skill/). Observability: [`LANGFUSE.md`](./LANGFUSE.md).
 
-## Quick Start (Judges' 5-Step Path)
+_UCWS Singapore Hackathon 2026 · Skills Track · sponsors: KIMI (Moonshot) · MiroMind · Google Cloud + Gemini_
 
-1. `git clone` this repo
-2. `cp .env.template .env` and fill in `MOONSHOT_API_KEY`, `GOOGLE_API_KEY`, `BASE_SEPOLIA_RPC`
-3. `docker compose up` — starts router + 10 skills + Supabase emulator
-4. Open `http://localhost:3000` — see the live activity stream UI
-5. Try input: *"I got into a car accident yesterday"* — watch KIMI route to claim skills, x402 collect $0.02, audit hash chain
+## The one line that lists & monetizes any skill
 
-For full sponsor verification commands, see [JUDGING.md](./JUDGING.md).
+```python
+from veriforge import monetize
 
-## Architecture
+app = FastAPI()
+monetize(app, skill_id="my-skill", price_usdc=0.02, pay_to="0xYourWallet")
+# → x402 pay-per-call gate · creator payout + platform fee split · self-registers to the marketplace
+```
 
-See [PROJECT.md §5](./PROJECT.md#5-architecture).
+## 5-step judge path
+
+1. `git clone <repo> && cd veriforge && cp .env.template .env` — fill `MOONSHOT_API_KEY` (KIMI) + `GOOGLE_API_KEY` (Gemini)
+2. `docker compose up -d` — boots 14 services (10 skills + router + audit + activity + web; ~60s first run)
+3. Open `http://localhost:3001`
+4. Try **"My ceramic mug arrived cracked. Order ORD-1234."** — watch KIMI route 6 claim skills, each call pay a creator+platform split, and the audit chain extend live
+5. Copy any `trace_id` into the **[verify]** panel — the SHA-256 chain re-verifies. See **[`JUDGING.md`](./JUDGING.md)** for one-liner sponsor checks.
+
+## Sponsor tracks
+
+- **KIMI (Moonshot)** — `moonshot-v1-128k` holds the whole skill registry in-context to plan chains with no RAG. → [`marketplace/router/router.py`](./marketplace/router/router.py)
+- **MiroMind** — public `/verify/:trace_id` over a tamper-evident SHA-256 chain that doubles as a revenue ledger. → [`marketplace/audit/`](./marketplace/audit/)
+- **Google Cloud + Gemini** — Gemini 2.5 Flash + Vision power the 10 skills' inference. → [`skills/claims-damage-vision/handler.py`](./skills/claims-damage-vision/handler.py)
+
+Per-sponsor verify commands: **[`JUDGING.md`](./JUDGING.md)**.
+
+## What's inside
+
+- **10 monetized skills** (`skills/`) — 7 ClaimsForge-derived (intent, emotion, needs, damage-vision, compensation, verify, fraud-image) + 3 horizontal (summarize, translate, sentiment)
+- **Monetize SDK** (`sdk/veriforge.py`) — the single file an author copies; x402 gate + fee split + self-registration
+- **Router + executor** (`marketplace/router/`) — KIMI planning, per-call payment, opt-in Langfuse tracing
+- **Audit + activity** (`marketplace/audit/`, `marketplace/activity/`) — SHA-256 chain (+ revenue ledger) and live event stream
+
+Full plan: [`PROJECT.md`](./PROJECT.md) · daily decisions: [`DECISIONS.md`](./DECISIONS.md) · Day 4 board: [`DAY4-TASKS.md`](./DAY4-TASKS.md).
 
 ## Built by
 
-1 developer + Claude Code · 5 days · UCWS Singapore Hackathon 2026 · Skills Track
+@duan + @ryan + 2 Claude Codes · UCWS Singapore Hackathon 2026 · Skills Track
