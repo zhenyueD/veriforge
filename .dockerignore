@@ -1,0 +1,9 @@
+# Keep the build context lean. Critically, exclude MiroFlow's host .venv (619MB,
+# macOS arm64 — useless in a linux image; we run `uv sync` inside the build instead).
+external/MiroFlow/.venv/
+external/MiroFlow/logs/
+**/__pycache__/
+**/*.pyc
+.git/
+.gstack/
+*.log

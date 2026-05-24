@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "updated_at": "2026-05-24",
   "skills": [
     {
@@ -283,6 +283,38 @@
         "any"
       ],
       "pay_to": "0x65ec6c5d69612665643f09c15806f28715b3773b"
+    },
+    {
+      "id": "deep-research",
+      "name": "Deep Research (MiroFlow)",
+      "endpoint": "http://HOST:7008",
+      "description": "Multi-step internet research agent powered by MiroMind's MiroFlow (SOTA on GAIA/FutureX/HLE). Searches the web, reads pages, cross-references sources, returns a boxed answer. Every MiroFlow step is SHA-256 hash-chained into a verifiable research trace.",
+      "inputs": [
+        "task",
+        "task_file"
+      ],
+      "outputs": [
+        "answer",
+        "status",
+        "n_steps",
+        "trace_chain_tip",
+        "trace_chain",
+        "engine"
+      ],
+      "price_usdc": 0.25,
+      "pay_to": "0xe9d69028cd5a1956aa128a7b7f16112a64426b35",
+      "tags": [
+        "horizontal",
+        "capability:research",
+        "capability:web-search",
+        "capability:verifiable",
+        "sponsor:miromind",
+        "premium"
+      ],
+      "llm_compat": [
+        "openai",
+        "gemini"
+      ]
     }
   ]
 }
