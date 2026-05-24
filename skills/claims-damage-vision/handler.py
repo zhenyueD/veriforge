@@ -61,12 +61,19 @@ def invoke(req: InvokeRequest):
         r: DamageAssessment = assess(req.user_message, image_bytes=image_bytes, image_mime=req.image_mime)
     except Exception as e:
         raise HTTPException(502, f"assess failed: {e}")
+    # No image → a vision assessment can't be high-confidence. Cap it so the score
+    # reflects the missing evidence (also satisfies the no_image_caps_confidence invariant).
+    confidence = r.confidence
+    reasoning = r.reasoning
+    if image_bytes is None and confidence > 0.5:
+        confidence = 0.5
+        reasoning = f"[no image provided — confidence capped] {reasoning}"
     core = {
         "damage_type": r.damage_type.value,
         "severity": r.severity,
         "affected_parts": list(r.affected_parts),
-        "confidence": r.confidence,
-        "reasoning": r.reasoning,
+        "confidence": confidence,
+        "reasoning": reasoning,
         "evidence_quote": r.evidence_quote,
         "detected_subject": r.detected_subject,
         "bounding_boxes": [bb.model_dump() if hasattr(bb, "model_dump") else bb for bb in (r.bounding_boxes or [])],
