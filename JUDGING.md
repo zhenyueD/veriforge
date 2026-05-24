@@ -71,6 +71,19 @@ curl -s "localhost:8001/verify/$TID" | python3 -c 'import sys,json;print(json.lo
 bash examples/external-skill/run-demo.sh | grep -q 'community-readability listed: True' && echo "OK self-register"
 ```
 
+## Metrics (reproducible, no stack needed)
+
+```bash
+# Invariant harness — every skill's verify() hook; good fixtures pass, violating ones caught
+python3 scripts/invariant_harness.py        # → 10/10 skills, "all invariants behave correctly"
+
+# KIMI routing accuracy on a labelled golden set (needs MOONSHOT_API_KEY)
+set -a && source .env && set +a
+python3 scripts/langfuse_eval.py            # → routing_accuracy = 100% (6/6)
+```
+
+Latest run: **routing_accuracy 100% (6/6)** · invariant harness **10/10 skills pass, all violations caught**.
+
 ## Sponsor track verifications
 
 ### Best Use of KIMI (Moonshot)
