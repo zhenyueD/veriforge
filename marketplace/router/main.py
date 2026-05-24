@@ -97,6 +97,43 @@ def register(req: RegisterRequest):
     return {"ok": True, "created": created, "skill_id": skill["id"], "skill": skill}
 
 
+def _param_type(field: str) -> str:
+    if field.startswith(("has_", "is_")):
+        return "boolean"
+    if field.endswith("_cents") or field in {"severity", "score", "intensity", "max_bullets", "prior_score"}:
+        return "integer"
+    return "string"
+
+
+def _input_schema(skill: dict) -> dict:
+    inputs = skill.get("inputs", [])
+    props = {f: {"type": _param_type(f)} for f in inputs}
+    required = [inputs[0]] if inputs else []
+    return {"type": "object", "properties": props, "required": required}
+
+
+@app.get("/skills/tools")
+def skills_as_tools(format: str = "openai"):
+    """
+    Export the registry as LLM tool/function specs so ANY agent (OpenAI, Anthropic,
+    or MCP) can discover and call these skills. The 'cross-LLM' promise, one curl away.
+    Param schemas are derived from registry `inputs`; the authoritative schema per skill
+    is its skill.yaml. format=openai (default) | anthropic.
+    """
+    reg = load_registry()
+    tools = []
+    for s in reg.get("skills", []):
+        name = s["id"].replace("-", "_")
+        desc = f"{s.get('description','')} [price {s.get('price_usdc',0)} USDC/call, pays {s.get('pay_to','')[:12]}…]"
+        schema = _input_schema(s)
+        if format == "anthropic":
+            tools.append({"name": name, "description": desc, "input_schema": schema})
+        else:
+            tools.append({"type": "function",
+                          "function": {"name": name, "description": desc, "parameters": schema}})
+    return {"format": format, "count": len(tools), "tools": tools}
+
+
 @app.post("/route")
 def route(req: RouteRequest):
     plan = plan_skill_chain(req.user_input)
@@ -132,3 +169,19 @@ def run(req: RunRequest, background_tasks: BackgroundTasks):
     session_id = req.session_id or uuid.uuid4().hex[:12]
     background_tasks.add_task(_run_pipeline, req.user_input, session_id)
     return {"session_id": session_id, "status": "started"}
+
+
+@app.get("/result/{session_id}")
+def result(session_id: str):
+    """
+    BFF: fetch a finished pipeline's audit entries (with settlement + trust) for a
+    session. Lets a single upstream (e.g. the MCP proxy) talk only to the router.
+    """
+    import urllib.request
+    audit_url = os.getenv("AUDIT_URL", "http://localhost:8001")
+    try:
+        with urllib.request.urlopen(f"{audit_url}/session/{session_id}", timeout=5) as r:
+            import json as _json
+            return _json.loads(r.read().decode("utf-8"))
+    except Exception as e:  # noqa: BLE001 — surface as a clean payload, don't 500
+        return {"session_id": session_id, "entries": [], "error": str(e)}
