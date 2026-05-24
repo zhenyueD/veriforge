@@ -77,6 +77,7 @@ class StepResult:
     error: str = ""
     elapsed_ms: int = 0
     settlement: dict = field(default_factory=dict)  # real x402 split from X-Payment-Settled
+    signature: dict = field(default_factory=dict)   # Proof-of-Skill ed25519 signature headers
 
 
 @dataclass
@@ -211,6 +212,13 @@ def _exec_http(skill_id: str, payload: dict, endpoint: str, timeout: int = 60,
         with urllib.request.urlopen(req, timeout=timeout) as r:
             out = json.loads(r.read().decode("utf-8"))
             settled_hdr = r.headers.get("X-Payment-Settled", "")
+            sig = {
+                "skill_id": r.headers.get("X-Skill-Id", ""),
+                "signature": r.headers.get("X-Skill-Signature", ""),
+                "public_key": r.headers.get("X-Skill-Pubkey", ""),
+                "signed_ts": r.headers.get("X-Skill-Signed-Ts", ""),
+                "body_sha256": r.headers.get("X-Skill-Body-Sha256", ""),
+            }
         elapsed = int((time.time() - t0) * 1000)
         settlement = {}
         if settled_hdr:
@@ -218,8 +226,9 @@ def _exec_http(skill_id: str, payload: dict, endpoint: str, timeout: int = 60,
                 settlement = json.loads(settled_hdr)
             except json.JSONDecodeError:
                 settlement = {}
+        signature = sig if sig.get("signature") else {}
         return StepResult(skill_id=skill_id, ok=True, output=out,
-                          elapsed_ms=elapsed, settlement=settlement)
+                          elapsed_ms=elapsed, settlement=settlement, signature=signature)
     except urllib.error.HTTPError as e:
         elapsed = int((time.time() - t0) * 1000)
         body_err = e.read().decode("utf-8", errors="replace")[:300] if hasattr(e, "read") else ""
@@ -361,6 +370,8 @@ def execute_plan(
                 extra["settlement"] = step.settlement
             if trust_score is not None:
                 extra["trust_score"] = trust_score
+            if step.signature:
+                extra["signature"] = step.signature  # Proof-of-Skill: attributable to skill's key
             audit_res = append_audit(
                 session_id=session_id, seq=seq, skill_id=sid, trace_id=trace_id,
                 input_hash=input_hash, output_hash=output_hash,

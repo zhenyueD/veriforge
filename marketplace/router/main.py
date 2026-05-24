@@ -85,6 +85,7 @@ def list_skills():
             "description": s.get("description", ""),
             "price_usdc": price,
             "pay_to": s.get("pay_to", ""),
+            "public_key": s.get("public_key", ""),   # ed25519 — verify Proof-of-Skill signatures
             "earnings_preview": earnings_preview(price),
             "endpoint": s.get("endpoint", ""),
             "tags": s.get("tags", []),
