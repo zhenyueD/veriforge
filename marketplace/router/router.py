@@ -113,14 +113,41 @@ def _call_kimi(prompt: str, system: str = ROUTER_SYSTEM, *, timeout: int = 60) -
     return data["choices"][0]["message"]["content"], data.get("usage", {})
 
 
-def load_registry(registry_path: Optional[str] = None) -> dict:
-    if not registry_path:
-        registry_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "registry", "registry.json",
-        )
-    with open(registry_path) as f:
+def registry_path(path: Optional[str] = None) -> str:
+    return path or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "registry", "registry.json",
+    )
+
+
+def load_registry(path: Optional[str] = None) -> dict:
+    with open(registry_path(path)) as f:
         return json.load(f)
+
+
+def save_registry(registry: dict, path: Optional[str] = None) -> None:
+    import datetime
+    registry["updated_at"] = datetime.date.today().isoformat()
+    with open(registry_path(path), "w") as f:
+        json.dump(registry, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def upsert_skill(manifest: dict, path: Optional[str] = None) -> tuple[dict, bool]:
+    """
+    Insert or update a skill in the registry by id. Returns (skill, created).
+    Self-registration entrypoint for the veriforge SDK and the "List your skill" form.
+    """
+    reg = load_registry(path)
+    skills = reg.setdefault("skills", [])
+    for i, s in enumerate(skills):
+        if s["id"] == manifest["id"]:
+            skills[i] = {**s, **manifest}   # merge: keep existing fields, override provided
+            save_registry(reg, path)
+            return skills[i], False
+    skills.append(manifest)
+    save_registry(reg, path)
+    return manifest, True
 
 
 def plan_skill_chain(user_input: str, registry: Optional[dict] = None) -> SkillPlan:

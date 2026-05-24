@@ -16,13 +16,15 @@ import os, sys, uuid
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "sdk"))
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from router import plan_skill_chain, load_registry
+from router import plan_skill_chain, load_registry, upsert_skill
 from executor import execute_plan
+from veriforge import earnings_preview
 
 app = FastAPI(title="VeriForge Router", version="0.1.0")
 
@@ -42,6 +44,20 @@ class RunRequest(BaseModel):
     session_id: Optional[str] = None
 
 
+class RegisterRequest(BaseModel):
+    """Skill manifest posted by the veriforge SDK on startup, or a 'List your skill' form."""
+    id: str
+    pay_to: str
+    price_usdc: float = Field(ge=0)
+    name: str = ""
+    endpoint: str = ""
+    description: str = ""
+    inputs: list[str] = Field(default_factory=list)
+    outputs: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    llm_compat: list[str] = Field(default_factory=list)
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "veriforge-router"}
@@ -50,6 +66,34 @@ def health():
 @app.get("/registry")
 def get_registry():
     return load_registry()
+
+
+@app.get("/skills")
+def list_skills():
+    """Registry enriched with a computed earnings preview — the UI consumes this directly."""
+    reg = load_registry()
+    out = []
+    for s in reg.get("skills", []):
+        price = s.get("price_usdc", 0)
+        out.append({
+            "id": s["id"],
+            "name": s.get("name", s["id"]),
+            "description": s.get("description", ""),
+            "price_usdc": price,
+            "pay_to": s.get("pay_to", ""),
+            "earnings_preview": earnings_preview(price),
+            "endpoint": s.get("endpoint", ""),
+            "tags": s.get("tags", []),
+            "llm_compat": s.get("llm_compat", []),
+        })
+    return {"version": reg.get("version"), "updated_at": reg.get("updated_at"), "skills": out}
+
+
+@app.post("/register")
+def register(req: RegisterRequest):
+    """Self-registration: insert or update a skill in the marketplace registry by id."""
+    skill, created = upsert_skill(req.model_dump())
+    return {"ok": True, "created": created, "skill_id": skill["id"], "skill": skill}
 
 
 @app.post("/route")
