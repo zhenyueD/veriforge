@@ -15,6 +15,15 @@ from schemas import (  # type: ignore
 
 app = FastAPI(title="claims-compensation skill", version="0.1.0")
 
+# ── VeriForge: monetize this skill in one line ──
+# x402 pay-per-call (per-creator payout + platform fee split) + marketplace listing.
+# The SDK lives at /sdk in containers, ./sdk on host.
+import os as _os, sys as _sys
+_sys.path.insert(0, "/sdk")
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), "sdk"))
+from veriforge import monetize  # noqa: E402
+monetize(app, skill_id="claims-compensation", price_usdc=0.03, pay_to="0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1", self_register=False)
+
 
 class InvokeRequest(BaseModel):
     damage: dict
