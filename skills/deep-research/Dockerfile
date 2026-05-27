@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && rm -rf /var/lib/apt/lists/*
 
 # uv + the skill's own web framework
-RUN pip install --no-cache-dir uv fastapi "uvicorn[standard]" pydantic
+RUN pip install --no-cache-dir uv fastapi "uvicorn[standard]" pydantic cryptography
 
 # MiroFlow framework + its (heavy) deps, synced into /miroflow/.venv (linux).
 COPY external/MiroFlow/ /miroflow/

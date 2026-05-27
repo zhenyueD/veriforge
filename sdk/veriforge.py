@@ -33,8 +33,65 @@ import uuid
 import urllib.request
 from typing import Iterable, Optional
 
+import hashlib
+import hmac
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.responses import Response
+
+
+# ─── Proof-of-Skill signing (ed25519, attributable + publicly verifiable) ────
+# Each skill signs its output with a key derived from a master secret + skill_id.
+# The PRIVATE key stays in the skill; the PUBLIC key is published in the registry,
+# so anyone can verify "this output provably came from skill X" without trusting us.
+# Graceful: if `cryptography` is absent, signing is skipped and the skill still runs.
+SIGNING_SECRET = os.getenv("VERIFORGE_SIGNING_SECRET", "veriforge-demo-master-secret-2026").encode()
+SIGNING_ENABLED = os.getenv("VERIFORGE_SIGN", "1") != "0"
+
+try:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PrivateKey, Ed25519PublicKey,
+    )
+    from cryptography.hazmat.primitives import serialization
+    _HAS_CRYPTO = True
+except Exception:  # noqa: BLE001
+    _HAS_CRYPTO = False
+
+
+def _skill_private_key(skill_id: str):
+    seed = hmac.new(SIGNING_SECRET, skill_id.encode(), hashlib.sha256).digest()[:32]
+    return Ed25519PrivateKey.from_private_bytes(seed)
+
+
+def skill_public_key(skill_id: str) -> str:
+    """Hex ed25519 public key for a skill — publish this in the registry."""
+    if not _HAS_CRYPTO:
+        return ""
+    pk = _skill_private_key(skill_id).public_key()
+    return pk.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+
+
+def sign_bytes(skill_id: str, data: bytes) -> str:
+    """Sign data with the skill's private key. Returns hex signature ('' if unavailable)."""
+    if not (_HAS_CRYPTO and SIGNING_ENABLED):
+        return ""
+    try:
+        return _skill_private_key(skill_id).sign(data).hex()
+    except Exception:  # noqa: BLE001 — signing never blocks the response
+        return ""
+
+
+def verify_signature(public_key_hex: str, data: bytes, signature_hex: str) -> bool:
+    """Verify a Proof-of-Skill signature against a published public key. Trustless."""
+    if not _HAS_CRYPTO or not public_key_hex or not signature_hex:
+        return False
+    try:
+        pk = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
+        pk.verify(bytes.fromhex(signature_hex), data)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 # ─── Config (env-overridable) ────────────────────────────────────────────────
@@ -185,10 +242,27 @@ def attach_x402(
 
         # Settlement record = verification info + the (real) revenue split.
         settled = {**info, **split, "skill_id": skill_id}
+        ts = repr(time.time())
         response = await call_next(request)
-        response.headers["X-Payment-Settled"] = json.dumps(settled)[:1024]
-        response.headers["X-Payment-Mode"] = X402_MODE
-        return response
+
+        # Read the body so we can sign exactly what the skill returned (Proof of Skill).
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+        body_sha = hashlib.sha256(body).hexdigest()
+        sig = sign_bytes(skill_id, f"{skill_id}|{body_sha}|{ts}".encode())
+
+        headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+        headers["X-Payment-Settled"] = json.dumps(settled)[:1024]
+        headers["X-Payment-Mode"] = X402_MODE
+        if sig:  # attributable + publicly verifiable: "skill X produced this exact body at ts"
+            headers["X-Skill-Id"] = skill_id
+            headers["X-Skill-Signed-Ts"] = ts
+            headers["X-Skill-Body-Sha256"] = body_sha
+            headers["X-Skill-Signature"] = sig
+            headers["X-Skill-Pubkey"] = skill_public_key(skill_id)
+        return Response(content=body, status_code=response.status_code,
+                        headers=headers, media_type=response.media_type)
 
     return app
 
