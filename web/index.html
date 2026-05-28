@@ -115,6 +115,10 @@
                 display: flex; align-items: center; justify-content: center; font-size: 20px;
                 margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); }
   .skill-name { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
+  .skill-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px;
+                 font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase;
+                 background: rgba(92,242,160,0.12); color: var(--ok); border: 1px solid rgba(92,242,160,0.2);
+                 margin-bottom: 12px; font-family: "JetBrains Mono", monospace; }
   .skill-provider { font-size: 11px; color: var(--accent); text-transform: uppercase;
                     letter-spacing: 1px; margin-bottom: 12px; font-family: "JetBrains Mono", monospace; }
   .skill-card.horizontal .skill-provider { color: var(--accent-2); }
@@ -307,6 +311,20 @@
   </div>
 </section>
 
+<section id="List Your Skills">
+  <div class="section-header">
+    <div>
+      <span class="section-eyebrow">List Your Skills</span>
+      <h2 class="section-title">List Your Skills</h2>
+      <p class="section-sub">List Your Skills</p>
+    </div>
+  </div>
+  <div class="verify-row">
+    <input id="traceInput" placeholder="monetize(...)">
+    <button class="btn btn-primary" id="CopyBtn">Copy</button>
+  </div>
+</section>
+
 <section id="demo">
   <div class="section-header">
     <div>
@@ -358,6 +376,7 @@
   </div>
   <div id="verifyResult" class="verify-result idle">⏳ Verify a trace to see the full audit chain and cryptographic verification result.</div>
 </section>
+
 
 <footer id="sponsors">
   <div class="sponsors-label">Architecturally Powered By</div>
@@ -542,6 +561,9 @@ function renderSkills(skills) {
     card.appendChild(el('div', {class: 'skill-icon', text: icon}));
     card.appendChild(el('div', {class: 'skill-provider', text: provider}));
     card.appendChild(el('div', {class: 'skill-name', text: s.name || s.id}));
+    if (s.public_key) {
+      card.appendChild(el('span', {class: 'skill-badge', text: '✓ Verifiable'}));
+    }
     card.appendChild(el('div', {class: 'skill-desc', text: (s.description || '').slice(0, 180)}));
     
     const tagsDiv = el('div', {class: 'skill-tags'});
@@ -722,7 +744,13 @@ async function verifyTrace() {
     box.textContent = `Verify error: ${e.message || e}`;
   }
 }
+async function monetizeSkill() {
+app = FastAPI()
+monetize(app, skill_id="my-skill", price_usdc=0.02, pay_to="0xYourWallet")
+}
+
 $('verifyBtn').onclick = verifyTrace;
+$('CopyBtn').onclick = monetizeSkill;
 
 // ─── Boot ───
 loadMarketplace();
