@@ -129,6 +129,9 @@
   .skill-price { font-family: "JetBrains Mono", monospace; font-weight: 600;
                  font-size: 14px; color: var(--accent-3); }
   .skill-price .unit { color: var(--fg-mute); font-size: 11px; margin-left: 2px; }
+  .skill-price-info { margin-top: 8px; display: grid; gap: 2px; font-size: 11px; color: var(--fg-dim); line-height: 1.4; }
+  .skill-price-info span { display: block; }
+  .skill-price-info .creator { color: var(--fg); }
   .skill-try { font-size: 12px; color: var(--accent); font-weight: 600;
                display: flex; align-items: center; gap: 4px; }
 
@@ -404,14 +407,14 @@ function el(tag, props = {}, children = []) {
 const ALL_SKILLS = [
   {
     id: 'claims-intent', name: 'Claims Intent Classifier', icon: '🎯',
-    category: 'claims', price: 0.002,
+    category: 'claims', price: 0.002, 
     description: 'Classify customer intent: claim_with_image / claim_text_only / general_inquiry / needs_clarification / followup_on_prior_claim.',
     tags: ['vertical:classification', 'capability:nlp'],
     example: 'My mug arrived cracked, order ORD-1234.',
   },
   {
     id: 'claims-emotion', name: 'Claims Emotion Grader', icon: '💗',
-    category: 'claims', price: 0.002,
+    category: 'claims', price: 0.002, 
     description: 'Grade customer affect 0-10 with risk level (LOW/MEDIUM/HIGH/CRITICAL). Detects legal-threat, regulator, media, chargeback signals.',
     tags: ['vertical:sentiment', 'capability:escalation'],
     example: 'This is the third time I have written. My lawyer will hear about this.',
@@ -512,6 +515,11 @@ async function loadMarketplace() {
   }
 }
 
+function formatUsdc(amount) {
+  const value = parseFloat(amount.toFixed(6));
+  return `$${value}`;
+}
+
 function renderSkills(skills) {
   const grid = $('skillsGrid');
   while (grid.firstChild) grid.removeChild(grid.firstChild);
@@ -520,6 +528,8 @@ function renderSkills(skills) {
     const provider = isHorizontal ? 'Horizontal' : 'ClaimsForge Bundle';
     const icon = ICONS[s.id] || '🧩';
     const price = s.price_usdc !== undefined ? s.price_usdc : s.price || 0.001;
+    const platformFee = price * 0.02;
+    const creatorEarnings = price - platformFee;
     
     const card = el('div', {
       class: 'skill-card' + (isHorizontal ? ' horizontal' : ''),
@@ -540,10 +550,19 @@ function renderSkills(skills) {
     }
     card.appendChild(tagsDiv);
     
+    const priceInfo = el('div', {class: 'skill-price-info'}, [
+      el('span', {class: 'creator', text: `Creator earns ${formatUsdc(creatorEarnings)} per call`} ),
+      el('span', {text: `Platform fee ${formatUsdc(platformFee)} (2%)`} ),
+    ]);
+
     const footer = el('div', {class: 'skill-footer'});
-    const priceSpan = el('span', {class: 'skill-price', text: `$${price.toFixed(3)}`});
-    priceSpan.appendChild(el('span', {class: 'unit', text: ' USDC/call'}));
-    footer.appendChild(priceSpan);
+    const priceBlock = el('div', {style: 'display:flex;flex-direction:column;gap:4px;'}, [
+      el('span', {class: 'skill-price', text: formatUsdc(price)}),
+      priceInfo,
+    ]);
+    priceBlock.firstChild.appendChild(el('span', {class: 'unit', text: ' USDC/call'}));
+    footer.appendChild(priceBlock);
+
     footer.appendChild(el('span', {class: 'skill-try', text: 'Try it →'}));
     card.appendChild(footer);
     grid.appendChild(card);
