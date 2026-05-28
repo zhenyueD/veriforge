@@ -9,38 +9,42 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-0: #07090f;
-    --bg-1: #0d111c;
-    --bg-2: #161b29;
-    --bg-3: #1f2538;
-    --border: #2a3148;
-    --border-strong: #3a4566;
-    --fg: #f3f5fb;
-    --fg-dim: #aab3c8;
-    --fg-mute: #6b7593;
-    --accent: #5cf2c8;       /* cyan-mint, MiroMind verification feel */
-    --accent-2: #9b7bff;     /* purple, KIMI feel */
-    --accent-3: #ff9a4e;     /* warm, payment */
-    --ok: #5cf2a0;
-    --warn: #ffce4e;
-    --err: #ff5478;
-    --grad-1: linear-gradient(135deg, #5cf2c8 0%, #9b7bff 100%);
-    --grad-2: linear-gradient(135deg, #9b7bff 0%, #ff9a4e 100%);
+    --bg-0: #05060d;
+    --bg-1: #0e1120;
+    --bg-2: #141926;
+    --bg-3: #1f2741;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --fg: #f5f7ff;
+    --fg-dim: #9aa3c6;
+    --fg-mute: #7480a2;
+    --accent: #7bf8d7;
+    --accent-2: #b285ff;
+    --accent-3: #ffa46a;
+    --accent-4: #ff6fb8;
+    --ok: #68f1b2;
+    --warn: #ffd85b;
+    --err: #ff6d93;
+    --grad-1: linear-gradient(135deg, #7bf8d7 0%, #b285ff 100%);
+    --grad-2: linear-gradient(135deg, #b285ff 0%, #ffa46a 100%);
+    --bg-glow: radial-gradient(circle at 18% 14%, rgba(123,248,215,0.18), transparent 17%),
+                 radial-gradient(circle at 80% 10%, rgba(178,133,255,0.14), transparent 12%),
+                 radial-gradient(circle at 60% 80%, rgba(255,164,106,0.12), transparent 18%);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg-0); color: var(--fg);
-               font: 15px/1.6 "Inter", -apple-system, system-ui, sans-serif;
-               -webkit-font-smoothing: antialiased; }
+  html, body { margin: 0; padding: 0; min-height: 100%; background: var(--bg-0); color: var(--fg);
+               font: 16px/1.7 "Inter", -apple-system, system-ui, sans-serif;
+               -webkit-font-smoothing: antialiased; background-image: var(--bg-glow); background-blend-mode: screen; }
   .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
 
   /* ─── Nav ─── */
   nav { display: flex; align-items: center; padding: 18px 40px;
-        border-bottom: 1px solid var(--border); position: sticky; top: 0;
-        background: rgba(7,9,15,0.85); backdrop-filter: blur(12px); z-index: 100;
+        border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0;
+        background: rgba(8,12,24,0.92); backdrop-filter: blur(16px); z-index: 100;
         justify-content: space-between; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 800;
-           font-size: 18px; letter-spacing: 0.5px; }
-  .brand-mark { width: 28px; height: 28px; border-radius: 7px;
+           font-size: 18px; letter-spacing: 0.6px; text-transform: uppercase; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 12px;
                 background: var(--grad-1); display: flex; align-items: center;
                 justify-content: center; font-size: 14px; color: #07090f; font-weight: 900; }
   .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--fg-dim); }
@@ -54,24 +58,24 @@
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   /* ─── Hero ─── */
-  .hero { padding: 80px 40px 60px; text-align: center; max-width: 980px;
-          margin: 0 auto; }
-  .hero-eyebrow { display: inline-block; font-size: 12px; letter-spacing: 1.5px;
-                  color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
-                  padding: 5px 14px; border: 1px solid var(--accent); border-radius: 999px; }
-  .hero h1 { font-size: 56px; line-height: 1.05; margin: 0 0 20px;
+  .hero { padding: 92px 40px 72px; text-align: center; max-width: 980px;
+          margin: 0 auto; position: relative; }
+  .hero-eyebrow { display: inline-block; font-size: 12px; letter-spacing: 1.6px;
+                  color: var(--accent); text-transform: uppercase; margin-bottom: 18px;
+                  padding: 6px 16px; border: 1px solid rgba(123,248,215,0.45); border-radius: 999px; }
+  .hero h1 { font-size: clamp(3.3rem, 5vw, 5.2rem); line-height: 0.95; margin: 0 0 22px;
              font-weight: 800; letter-spacing: -1px; }
   .hero h1 .grad { background: var(--grad-1); -webkit-background-clip: text;
                    background-clip: text; -webkit-text-fill-color: transparent; }
   .hero p { font-size: 19px; color: var(--fg-dim); max-width: 720px;
             margin: 0 auto 36px; }
   .hero-cta { display: inline-flex; gap: 12px; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
-         border-radius: 8px; font-weight: 600; font-size: 14px; font-family: inherit;
-         cursor: pointer; border: 0; transition: transform .15s, box-shadow .15s; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px;
+         border-radius: 14px; font-weight: 700; font-size: 14px; font-family: inherit;
+         cursor: pointer; border: 0; transition: transform .18s, box-shadow .18s, background .18s; }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-primary { background: var(--grad-1); color: #07090f;
-                 box-shadow: 0 4px 24px -4px rgba(92,242,200,0.4); }
+                 box-shadow: 0 16px 48px -28px rgba(123,248,215,0.9); }
   .btn-primary:not(:disabled):hover { transform: translateY(-1px);
                                       box-shadow: 0 6px 28px -2px rgba(92,242,200,0.55); }
   .btn-ghost { background: transparent; color: var(--fg); border: 1px solid var(--border-strong); }
@@ -97,20 +101,20 @@
   /* ─── Skill Marketplace Grid ─── */
   .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
                  gap: 16px; }
-  .skill-card { background: var(--bg-1); border: 1px solid var(--border);
-                border-radius: 14px; padding: 20px; transition: all .25s;
+  .skill-card { background: rgba(18,23,41,0.92); border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 20px; padding: 24px; transition: transform .25s, border-color .25s, box-shadow .25s;
                 position: relative; overflow: hidden; cursor: pointer; }
   .skill-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0;
                         height: 3px; background: var(--grad-1); opacity: 0;
                         transition: opacity .25s; }
-  .skill-card:hover { border-color: var(--border-strong); transform: translateY(-2px);
-                      box-shadow: 0 8px 32px -4px rgba(0,0,0,0.5); }
+  .skill-card:hover { border-color: rgba(255,255,255,0.16); transform: translateY(-4px);
+                      box-shadow: 0 18px 60px -24px rgba(0,0,0,0.65); }
   .skill-card:hover::before { opacity: 1; }
   .skill-card.horizontal::before { background: var(--grad-2); }
-  .skill-icon { width: 40px; height: 40px; border-radius: 9px; background: var(--bg-3);
+  .skill-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.04);
                 display: flex; align-items: center; justify-content: center; font-size: 20px;
-                margin-bottom: 14px; border: 1px solid var(--border); }
-  .skill-name { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+                margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); }
+  .skill-name { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
   .skill-provider { font-size: 11px; color: var(--accent); text-transform: uppercase;
                     letter-spacing: 1px; margin-bottom: 12px; font-family: "JetBrains Mono", monospace; }
   .skill-card.horizontal .skill-provider { color: var(--accent-2); }
@@ -291,7 +295,7 @@
       <span class="section-eyebrow">Catalog</span>
       <h2 class="section-title">Skill Marketplace</h2>
       <p class="section-sub">Any agent can discover, invoke, and pay for these skills. Hover for details — click to try in the demo below.</p>
-    </div>
+    </div>  
   </div>
   <div class="skills-grid" id="skillsGrid">
     <div class="skill-card skill-skeleton" style="height:280px;"></div>
@@ -396,42 +400,115 @@ function el(tag, props = {}, children = []) {
   return e;
 }
 
-// ─── Icons per skill (emoji-friendly) ───
-const ICONS = {
-  'claims-intent': '🎯',
-  'claims-emotion': '💗',
-  'claims-needs': '🧭',
-  'claims-damage-vision': '📸',
-  'claims-compensation': '💰',
-  'claims-verify': '✅',
-  'text-summarize': '📑',
-  'text-translate': '🌐',
-  'sentiment-analyze': '😊',
-};
+// ─── All Skills Catalog ───
+const ALL_SKILLS = [
+  {
+    id: 'claims-intent', name: 'Claims Intent Classifier', icon: '🎯',
+    category: 'claims', price: 0.002,
+    description: 'Classify customer intent: claim_with_image / claim_text_only / general_inquiry / needs_clarification / followup_on_prior_claim.',
+    tags: ['vertical:classification', 'capability:nlp'],
+    example: 'My mug arrived cracked, order ORD-1234.',
+  },
+  {
+    id: 'claims-emotion', name: 'Claims Emotion Grader', icon: '💗',
+    category: 'claims', price: 0.002,
+    description: 'Grade customer affect 0-10 with risk level (LOW/MEDIUM/HIGH/CRITICAL). Detects legal-threat, regulator, media, chargeback signals.',
+    tags: ['vertical:sentiment', 'capability:escalation'],
+    example: 'This is the third time I have written. My lawyer will hear about this.',
+  },
+  {
+    id: 'claims-needs', name: 'Claims Needs Discovery', icon: '🧭',
+    category: 'claims', price: 0.002,
+    description: 'Surface surface/latent/emotional needs. Outputs retention_risk and suggested_offer_bias (refund vs replacement vs store-credit).',
+    tags: ['vertical:discovery', 'capability:context'],
+    example: 'My mug arrived cracked. It was a birthday gift for my sister this Friday.',
+  },
+  {
+    id: 'claims-damage-vision', name: 'Claims Damage Vision', icon: '📸',
+    category: 'claims', price: 0.015,
+    description: 'Assess product damage from a photo using Gemini Vision. 96.7% accuracy on labeled eval set. Catches text/image mismatch attacks.',
+    tags: ['vertical:vision', 'capability:gemini'],
+    example: 'My mug has a 2cm crack along the rim.',
+  },
+  {
+    id: 'claims-compensation', name: 'Claims Compensation Proposer', icon: '💰',
+    category: 'claims', price: 0.005,
+    description: 'Pick matching policy from 26-rule DSL + RAG over merchant KB + live precedent. Propose typed offer with empathetic justification.',
+    tags: ['vertical:policy', 'capability:reasoning'],
+    example: 'My mug arrived cracked, order ORD-1234.',
+  },
+  {
+    id: 'claims-verify', name: 'Claims Offer Verifier', icon: '✅',
+    category: 'claims', price: 0.003,
+    description: 'Hard-cap proposed offer to policy max with emotion-driven upward flex. Escalate to human when confidence < 0.5 and amount > $50.',
+    tags: ['vertical:verification', 'capability:gate'],
+    example: 'My mug arrived cracked, order ORD-1234.',
+  },
+  {
+    id: 'claims-fraud-image', name: 'Claims Fraud Image Check', icon: '🔍',
+    category: 'claims', price: 0.008,
+    description: 'Deterministic image-provenance fraud check. pHash collision detection + EXIF age check catch recycled photos. No LLM required.',
+    tags: ['vertical:fraud', 'capability:deterministic'],
+    example: 'Verify image provenance for claim ORD-1234.',
+  },
+  {
+    id: 'text-summarize', name: 'Text Summarizer', icon: '📑',
+    category: 'horizontal', price: 0.005,
+    description: 'Summarize long-form text into structured bullet points with configurable length (executive/detailed/casual). Domain-agnostic.',
+    tags: ['horizontal:utility', 'capability:summarization'],
+    example: 'Summarize this article into 5 bullets: Lorem ipsum dolor sit amet…',
+  },
+  {
+    id: 'text-translate', name: 'Text Translator', icon: '🌐',
+    category: 'horizontal', price: 0.008,
+    description: 'Translate text between languages with automatic source detection. Preserves formatting and domain terminology.',
+    tags: ['horizontal:utility', 'capability:translation'],
+    example: 'Translate this paragraph to Chinese: Yesterday the cat sat on the mat.',
+  },
+  {
+    id: 'sentiment-analyze', name: 'Sentiment Analyzer', icon: '😊',
+    category: 'horizontal', price: 0.003,
+    description: 'Analyze sentiment into positive/neutral/negative with emotion breakdown and intensity score. Domain-agnostic.',
+    tags: ['horizontal:utility', 'capability:sentiment'],
+    example: 'I am extremely disappointed with this purchase.',
+  },
+  {
+    id: 'deep-research', name: 'Deep Research (MiroFlow)', icon: '🔬',
+    category: 'horizontal', price: 0.050,
+    description: 'Multi-step internet research powered by MiroMind\'s MiroFlow framework. Plans & executes research trajectory over web, cross-references sources.',
+    tags: ['horizontal:advanced', 'capability:research'],
+    example: 'Research the history of ceramic manufacturing in 2024.',
+  },
+];
 
-const EXAMPLE_INPUT = {
-  'claims-intent': 'My mug arrived cracked, order ORD-1234.',
-  'claims-emotion': 'This is the third time I have written. My lawyer will hear about this.',
-  'claims-needs': 'My mug arrived cracked. It was a birthday gift for my sister this Friday.',
-  'claims-damage-vision': 'My mug has a 2cm crack along the rim.',
-  'claims-compensation': 'My mug arrived cracked, order ORD-1234.',
-  'claims-verify': 'My mug arrived cracked, order ORD-1234.',
-  'text-summarize': 'Summarize this paragraph into 3 bullets: Lorem ipsum dolor sit amet…',
-  'text-translate': 'Translate this paragraph to Chinese: Yesterday the cat sat on the mat.',
-  'sentiment-analyze': 'I am extremely disappointed with this purchase.',
-};
+const ICONS = {};
+const EXAMPLE_INPUT = {};
+ALL_SKILLS.forEach(s => {
+  ICONS[s.id] = s.icon;
+  EXAMPLE_INPUT[s.id] = s.example;
+});
 
 // ─── Load registry and render marketplace ───
 async function loadMarketplace() {
   try {
-    const r = await fetch(`${ROUTER_URL}/registry`);
-    const data = await r.json();
-    const skills = data.skills || [];
+    // Try to fetch registry, but fallback to ALL_SKILLS if unavailable
+    let skills = ALL_SKILLS;
+    try {
+      const r = await fetch(`${ROUTER_URL}/registry`);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.skills && data.skills.length > 0) {
+          skills = data.skills;
+        }
+      }
+    } catch (e) {
+      console.log('Registry fetch failed, using static catalog');
+    }
     $('statSkills').textContent = skills.length;
     $('navStatus').textContent = `${skills.length} skills live`;
     renderSkills(skills);
   } catch (e) {
-    $('skillsGrid').textContent = `Failed to load registry: ${e.message}`;
+    $('skillsGrid').textContent = `Failed to load marketplace: ${e.message}`;
   }
 }
 
@@ -439,8 +516,11 @@ function renderSkills(skills) {
   const grid = $('skillsGrid');
   while (grid.firstChild) grid.removeChild(grid.firstChild);
   for (const s of skills) {
-    const isHorizontal = (s.tags || []).some(t => t.includes('horizontal'));
+    const isHorizontal = s.category === 'horizontal' || (s.tags || []).some(t => t.includes('horizontal'));
     const provider = isHorizontal ? 'Horizontal' : 'ClaimsForge Bundle';
+    const icon = ICONS[s.id] || '🧩';
+    const price = s.price_usdc !== undefined ? s.price_usdc : s.price || 0.001;
+    
     const card = el('div', {
       class: 'skill-card' + (isHorizontal ? ' horizontal' : ''),
       onclick: () => {
@@ -448,17 +528,20 @@ function renderSkills(skills) {
         $('demo').scrollIntoView({behavior: 'smooth'});
       },
     });
-    card.appendChild(el('div', {class: 'skill-icon', text: ICONS[s.id] || '🧩'}));
+    
+    card.appendChild(el('div', {class: 'skill-icon', text: icon}));
     card.appendChild(el('div', {class: 'skill-provider', text: provider}));
     card.appendChild(el('div', {class: 'skill-name', text: s.name || s.id}));
     card.appendChild(el('div', {class: 'skill-desc', text: (s.description || '').slice(0, 180)}));
+    
     const tagsDiv = el('div', {class: 'skill-tags'});
     for (const t of (s.tags || []).slice(0, 3)) {
-      tagsDiv.appendChild(el('span', {text: t.replace('vertical:', '').replace('capability:', '')}));
+      tagsDiv.appendChild(el('span', {text: t.replace('vertical:', '').replace('horizontal:', '').replace('capability:', '')}));
     }
     card.appendChild(tagsDiv);
+    
     const footer = el('div', {class: 'skill-footer'});
-    const priceSpan = el('span', {class: 'skill-price', text: `$${(s.price_usdc || 0).toFixed(3)}`});
+    const priceSpan = el('span', {class: 'skill-price', text: `$${price.toFixed(3)}`});
     priceSpan.appendChild(el('span', {class: 'unit', text: ' USDC/call'}));
     footer.appendChild(priceSpan);
     footer.appendChild(el('span', {class: 'skill-try', text: 'Try it →'}));
