@@ -14,7 +14,8 @@ sys.path.insert(0, os.path.join(CLAIMSFORGE, "agents"))
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from fraud import compute_phash, check_exif_age, find_collision  # type: ignore
+import fraud  # type: ignore  # module ref for _FP_PATH override in the reuse demo
+from fraud import compute_phash, check_exif_age, find_collision, record_approved  # type: ignore
 
 app = FastAPI(title="claims-fraud-image skill", version="0.1.0")
 
@@ -83,6 +84,42 @@ def _assess(phash: Optional[str], exif: dict, collision: Optional[dict]) -> tupl
 @app.get("/health")
 def health():
     return {"ok": True, "skill_id": "claims-fraud-image"}
+
+
+class ReuseDemoRequest(BaseModel):
+    image_b64: str
+
+
+@app.post("/demo/reuse")
+def demo_reuse(req: ReuseDemoRequest):
+    """DEMO-ONLY: prove the deterministic reuse catch. Seeds an approved photo under
+    one session, then re-submits the SAME photo under another → cross-session fraud.
+    Runs against an isolated /tmp fingerprint store so it never touches real data."""
+    from pathlib import Path
+    img = base64.b64decode(req.image_b64)
+    phash = compute_phash(img) or hashlib.sha256(img).hexdigest()[:16]
+    saved, fraud._FP_PATH = fraud._FP_PATH, Path(f"/tmp/vf_demo_reuse_{os.getpid()}.jsonl")
+    try:
+        if fraud._FP_PATH.exists():
+            fraud._FP_PATH.unlink()
+        first = find_collision(phash, "session-original-A")
+        record_approved("demo-claim-img", phash, "session-original-A")
+        reuse = find_collision(phash, "session-fraudster-B")
+    finally:
+        try:
+            fraud._FP_PATH.unlink()
+        except Exception:
+            pass
+        fraud._FP_PATH = saved
+
+    def assess(coll):
+        cross = bool(coll and coll.get("_cross_session"))
+        score = 0.7 if cross else (0.25 if coll else 0.0)
+        return {"fraud_score": score, "cross_session": cross,
+                "verdict": "fraud" if score >= 0.6 else "suspicious" if score >= 0.25 else "clear",
+                "signals": ["cross_session_image_reuse"] if cross else []}
+
+    return {"phash": phash, "first": assess(first), "reuse": assess(reuse)}
 
 
 @app.post("/invoke", response_model=InvokeResponse)

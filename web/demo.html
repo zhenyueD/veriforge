@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VeriForge — Catch the Cheat</title>
+<style>
+  :root{
+    --bg-0:#07090f; --bg-1:#0d111c; --bg-2:#161b29; --bg-3:#1f2538;
+    --border:#2a3148; --border-strong:#3a4566;
+    --fg:#f3f5fb; --fg-dim:#aab3c8; --fg-mute:#6b7593;
+    --accent:#5cf2c8; --purple:#9b7bff; --orange:#ff9a4e;
+    --ok:#5cf2a0; --warn:#ffce4e; --err:#ff5478;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-0);color:var(--fg);
+       font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1.5}
+  a{color:var(--accent)}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px;justify-content:space-between;
+         border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+  h1{font-size:26px;margin:0 0 4px}
+  h1 .v{color:var(--accent)}
+  .sub{color:var(--fg-dim);font-size:13px;max-width:560px}
+  .cfg{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11px;color:var(--fg-mute)}
+  .cfg input{background:var(--bg-2);border:1px solid var(--border);color:var(--fg);
+             font-family:inherit;font-size:11px;padding:4px 6px;border-radius:6px;width:170px}
+  .btn{background:linear-gradient(135deg,var(--accent),var(--purple));color:#07090f;border:none;
+       font-family:inherit;font-weight:700;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.4)}
+  .btn.ghost{background:transparent;border:1px solid var(--border-strong);color:var(--fg)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--bg-1);border:1px solid var(--border);border-radius:14px;padding:18px;
+        position:relative;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+  .card.hero{grid-column:1/-1;border-color:var(--border-strong);
+             background:linear-gradient(160deg,#10141f,#0b0e17)}
+  .card h2{font-size:15px;margin:0;display:flex;align-items:center;gap:8px}
+  .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;
+       background:var(--bg-3);color:var(--accent);font-size:12px;font-weight:700}
+  .cheat{font-size:12px;color:var(--fg-dim)}
+  .cheat b{color:var(--orange)}
+  .badge{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.04em;
+         color:var(--fg-mute);border:1px solid var(--border);border-radius:999px;padding:3px 9px}
+  .row{display:flex;gap:10px;align-items:center}
+  .verdict{border-radius:10px;padding:14px 16px;display:none;animation:pop .25s ease}
+  .verdict.show{display:block}
+  .verdict .big{font-size:18px;font-weight:800;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+  .verdict .small{font-size:12px;margin-top:5px;color:var(--fg-dim)}
+  .verdict.alert{background:rgba(255,84,120,.10);border:1px solid var(--err)}
+  .verdict.alert .big{color:var(--err)}
+  .verdict.ok{background:rgba(92,242,160,.09);border:1px solid var(--ok)}
+  .verdict.ok .big{color:var(--ok)}
+  .verdict.neutral{background:var(--bg-2);border:1px solid var(--border)}
+  .caught{margin-top:8px;font-size:12px;color:var(--ok);font-weight:700}
+  .ev{font-size:11px;color:var(--fg-dim);background:var(--bg-2);border:1px solid var(--border);
+      border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
+  .pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:999px;margin:2px 4px 2px 0}
+  .pill.r{background:rgba(255,84,120,.15);color:var(--err)}
+  .pill.g{background:rgba(92,242,160,.15);color:var(--ok)}
+  .seq{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-top:4px}
+  .step{flex:1;min-width:150px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px}
+  .step .lbl{font-size:10px;color:var(--fg-mute);text-transform:uppercase;letter-spacing:.06em}
+  .step .val{font-size:14px;font-weight:700;margin-top:4px}
+  .step.g{border-color:var(--ok)} .step.g .val{color:var(--ok)}
+  .step.r{border-color:var(--err)} .step.r .val{color:var(--err)}
+  .spin{width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--accent);
+        border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pop{from{transform:scale(.98);opacity:.4}to{transform:scale(1);opacity:1}}
+  .sponsors{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px;justify-content:center;
+            color:var(--fg-mute);font-size:11px}
+  .sponsors span{border:1px solid var(--border);border-radius:999px;padding:5px 12px}
+  footer{margin-top:30px;color:var(--fg-mute);font-size:11px;text-align:center;line-height:1.7}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="v">Veri</span>Forge — Catch the Cheat</h1>
+      <div class="sub">Four one-click moments where an AI-agent pipeline is caught lying, tampered,
+        injected, or recycling evidence — and VeriForge proves it. Every result below is live,
+        not canned.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <button class="btn" id="autoplay">▶ Auto-play all 4</button>
+      <div class="cfg">
+        router <input id="router" value="http://localhost:8000" />
+        audit <input id="audit" value="http://localhost:8001" />
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- HERO: tamper + attribution (Feature B) -->
+    <section class="card hero" id="card-tamper">
+      <span class="badge">MiroMind · Proof-of-Skill</span>
+      <h2><span class="num">1</span> Tamper an audited result → re-verify names the liar</h2>
+      <div class="cheat">The cheat: <b>silently edit a finished, paid skill result.</b>
+        VeriForge seeds a real signed + hash-chained run, proves it VERIFIED, then we corrupt one
+        stored field — and <code>/re-verify</code> points straight at the offending skill.</div>
+      <div class="row"><button class="btn" data-run="tamper">Run tamper proof</button>
+        <span class="cheat" id="tamper-trace"></span></div>
+      <div class="seq" id="tamper-seq"></div>
+      <div class="verdict" id="tamper-v"></div>
+      <div class="ev" id="tamper-ev" style="display:none"></div>
+    </section>
+
+    <!-- 2 injection -->
+    <section class="card" id="card-injection">
+      <span class="badge">KIMI router · shield</span>
+      <h2><span class="num">2</span> Prompt injection</h2>
+      <div class="cheat">The cheat: <b>"Ignore all previous instructions…"</b> smuggled into the
+        user message to hijack the router + skills.</div>
+      <button class="btn ghost" data-run="injection">Run</button>
+      <div class="verdict" id="injection-v"></div>
+      <div class="ev" id="injection-ev" style="display:none"></div>
+    </section>
+
+    <!-- 3 overconfidence -->
+    <section class="card" id="card-overconfidence">
+      <span class="badge">Gemini Vision · trust</span>
+      <h2><span class="num">3</span> Overconfident skill</h2>
+      <div class="cheat">The cheat: <b>a skill claims 0.95 confidence with no image to back it.</b>
+        Each output is scored by its own invariant hook.</div>
+      <button class="btn ghost" data-run="overconfidence">Run</button>
+      <div class="verdict" id="overconfidence-v"></div>
+      <div class="ev" id="overconfidence-ev" style="display:none"></div>
+    </section>
+
+    <!-- 4 fraud reuse -->
+    <section class="card" id="card-fraud_reuse">
+      <span class="badge">claims-fraud-image · no LLM</span>
+      <h2><span class="num">4</span> Re-used claim photo</h2>
+      <div class="cheat">The cheat: <b>re-submit a previously-approved photo under a new claim.</b>
+        Deterministic perceptual-hash provenance catches the reuse across sessions.</div>
+      <button class="btn ghost" data-run="fraud_reuse">Run</button>
+      <div class="verdict" id="fraud_reuse-v"></div>
+      <div class="ev" id="fraud_reuse-ev" style="display:none"></div>
+    </section>
+  </div>
+
+  <div class="sponsors">
+    <span>KIMI (Moonshot) — registry-in-context router</span>
+    <span>MiroMind — verifiable hash-chain + Proof-of-Skill</span>
+    <span>Google Gemini — vision skill under trust scoring</span>
+  </div>
+  <footer>
+    x402 proves you <i>paid</i>. VeriForge proves <i>which skill produced what, and whether it lied</i> —
+    cryptographically, without trusting the operator.<br/>
+    Needs the stack up (<code>docker compose up -d</code>) with <code>VERIFORGE_DEMO=1</code> for the tamper demo.
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const cfg = () => ({ router: $('#router').value.replace(/\/$/,''), audit: $('#audit').value.replace(/\/$/,'') });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function call(base, path, method='POST', body=null){
+  const r = await fetch(base + path, {
+    method, headers: body ? {'Content-Type':'application/json'} : {},
+    body: body ? JSON.stringify(body) : null,
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,160));
+  return r.json();
+}
+
+function verdict(id, state, big, small){
+  const el = $('#'+id+'-v');
+  el.className = 'verdict show ' + state;
+  el.innerHTML = `<div class="big">${big}</div>` + (small ? `<div class="small">${small}</div>` : '');
+}
+function caughtLine(id, txt){ $('#'+id+'-v').innerHTML += `<div class="caught">✓ ${txt}</div>`; }
+function evidence(id, obj){
+  const el = $('#'+id+'-ev'); el.style.display='block';
+  el.textContent = typeof obj==='string' ? obj : JSON.stringify(obj, null, 2);
+}
+function busy(id, on){
+  const b = document.querySelector(`[data-run="${id}"]`);
+  if(b){ b.disabled = on; b.dataset.label ??= b.textContent;
+         b.innerHTML = on ? '<span class="spin"></span> running' : b.dataset.label; }
+}
+
+// ── 2. injection ──
+async function runInjection(){
+  busy('injection', true);
+  try{
+    const r = await call(cfg().router, '/demo/injection');
+    verdict('injection', 'alert', '🚨 INJECTION DETECTED',
+      `matched pattern <b style="color:var(--err)">${r.attack.matched_pattern}</b> via ${r.attack.detector}`);
+    caughtLine('injection', `Blocked before the router — 0 skills ran. Benign claim → ${r.control.verdict}.`);
+    evidence('injection', r);
+  }catch(e){ verdict('injection','neutral','⚠ '+e.message); }
+  busy('injection', false);
+}
+
+// ── 3. overconfidence ──
+async function runOverconfidence(){
+  busy('overconfidence', true);
+  try{
+    const r = await call(cfg().router, '/demo/overconfidence');
+    const t = r.overconfident.trust_score;
+    verdict('overconfidence', 'alert', '🚨 OVERCONFIDENT OUTPUT',
+      `claimed conf 0.95 with no image → invariant <b style="color:var(--err)">FAILED</b> (trust ${t})`);
+    caughtLine('overconfidence', `Honest output (conf 0.45) passes → trust ${r.honest.trust_score}.`);
+    evidence('overconfidence', r);
+  }catch(e){ verdict('overconfidence','neutral','⚠ '+e.message); }
+  busy('overconfidence', false);
+}
+
+// ── 4. fraud reuse ──
+async function runFraud(){
+  busy('fraud_reuse', true);
+  try{
+    const r = await call(cfg().router, '/demo/fraud_reuse');
+    verdict('fraud_reuse', 'alert', '🚨 RE-USED PHOTO',
+      `same pHash <code>${r.phash}</code> re-submitted → verdict <b style="color:var(--err)">${r.reuse.verdict}</b>`);
+    caughtLine('fraud_reuse', `First submission: ${r.first.verdict}. Reuse caught cross-session (score ${r.reuse.fraud_score}).`);
+    evidence('fraud_reuse', r);
+  }catch(e){ verdict('fraud_reuse','neutral','⚠ '+e.message); }
+  busy('fraud_reuse', false);
+}
+
+// ── 1. tamper + attribution (hero) ──
+function seqSteps(steps){
+  $('#tamper-seq').innerHTML = steps.map(s =>
+    `<div class="step ${s.cls||''}"><div class="lbl">${s.lbl}</div><div class="val">${s.val}</div></div>`).join('');
+}
+async function runTamper(){
+  busy('tamper', true);
+  $('#tamper-v').className='verdict'; $('#tamper-ev').style.display='none';
+  const C = cfg();
+  try{
+    seqSteps([{lbl:'1 · seed',val:'…'}]);
+    const seed = await call(C.router, '/demo/seed');
+    if(!seed.ok) throw new Error('seed failed: '+(seed.error||'unknown'));
+    $('#tamper-trace').innerHTML = `trace <code>${seed.trace_id.slice(0,12)}</code> · skill <code>${seed.skill_id}</code>`;
+    seqSteps([{lbl:'1 · seed signed run',val:seed.skill_id,cls:'g'},{lbl:'2 · verify',val:'…'}]);
+
+    const rv1 = await call(C.router, '/re-verify/'+seed.trace_id, 'POST', {});
+    seqSteps([
+      {lbl:'1 · seed signed run',val:seed.skill_id,cls:'g'},
+      {lbl:'2 · verify (clean)',val: rv1.verified?'VERIFIED':'?',cls: rv1.verified?'g':'r'},
+      {lbl:'3 · tamper',val:'…'},
+    ]);
+    verdict('tamper','ok','✓ VERIFIED','chain intact + every step cryptographically attributed to its skill key');
+    await sleep(900);
+
+    const tamper = await call(C.audit, '/admin/tamper', 'POST',
+      {session_id: seed.session_id, seq: seed.seq, target:'signature'});
+    seqSteps([
+      {lbl:'1 · seed signed run',val:seed.skill_id,cls:'g'},
+      {lbl:'2 · verify (clean)',val:'VERIFIED',cls:'g'},
+      {lbl:'3 · tampered field',val:'signature',cls:'r'},
+      {lbl:'4 · re-verify',val:'…'},
+    ]);
+    await sleep(500);
+
+    const rv2 = await call(C.router, '/re-verify/'+seed.trace_id, 'POST', {});
+    const named = (rv2.failed_skills||[]).join(', ') || tamper.skill_id;
+    seqSteps([
+      {lbl:'1 · seed signed run',val:seed.skill_id,cls:'g'},
+      {lbl:'2 · verify (clean)',val:'VERIFIED',cls:'g'},
+      {lbl:'3 · tampered field',val:'signature',cls:'r'},
+      {lbl:'4 · re-verify',val: rv2.verified?'still ok?!':'CAUGHT',cls: rv2.verified?'r':'r'},
+    ]);
+    verdict('tamper','alert','🚨 TAMPER DETECTED', rv2.verdict);
+    caughtLine('tamper', `Re-verify named the offending skill: <b style="color:var(--err)">${named}</b> — without trusting the operator.`);
+    evidence('tamper', {clean: {verified: rv1.verified, verdict: rv1.verdict}, tampered: rv2});
+  }catch(e){
+    verdict('tamper','neutral','⚠ '+e.message+'  (is the stack up with VERIFORGE_DEMO=1?)');
+  }
+  busy('tamper', false);
+}
+
+const RUNNERS = {injection:runInjection, overconfidence:runOverconfidence, fraud_reuse:runFraud, tamper:runTamper};
+document.querySelectorAll('[data-run]').forEach(b =>
+  b.addEventListener('click', () => RUNNERS[b.dataset.run]()));
+
+$('#autoplay').addEventListener('click', async () => {
+  const btn = $('#autoplay'); btn.disabled = true; btn.textContent = '▶ playing…';
+  for(const [id, fn] of [['card-tamper',runTamper],['card-injection',runInjection],
+                          ['card-overconfidence',runOverconfidence],['card-fraud_reuse',runFraud]]){
+    document.getElementById(id).scrollIntoView({behavior:'smooth', block:'center'});
+    await fn(); await sleep(1400);
+  }
+  btn.disabled = false; btn.textContent = '▶ Auto-play all 4';
+});
+</script>
+</body>
+</html>

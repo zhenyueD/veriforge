@@ -108,6 +108,28 @@ def get_session(session_id: str):
     }
 
 
+class TamperRequest(BaseModel):
+    session_id: str
+    seq: int = Field(ge=0)
+    target: str = "signature"  # signature | pubkey | output_hash
+
+
+@app.post("/admin/tamper")
+def admin_tamper(req: TamperRequest):
+    """
+    DEMO-ONLY: corrupt one stored audit field so /verify and /re-verify go red.
+    Gated by VERIFORGE_DEMO=1 and in-memory store only (never touches prod data).
+    """
+    if os.getenv("VERIFORGE_DEMO", "0") != "1":
+        raise HTTPException(403, "fault injection disabled (set VERIFORGE_DEMO=1)")
+    if not hasattr(store, "tamper"):
+        raise HTTPException(400, "tamper only supported on the in-memory store")
+    entry = store.tamper(req.session_id, req.seq, req.target)
+    if not entry:
+        raise HTTPException(404, f"no entry at session={req.session_id} seq={req.seq}")
+    return {"ok": True, "tampered": req.target, "skill_id": entry.skill_id, "seq": entry.seq}
+
+
 @app.get("/verify/{trace_id}")
 def verify_trace(trace_id: str):
     """

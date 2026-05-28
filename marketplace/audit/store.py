@@ -30,6 +30,24 @@ class InMemoryStore:
                     return e
         return None
 
+    def tamper(self, session_id: str, seq: int, target: str) -> Optional[AuditEntry]:
+        """DEMO-ONLY fault injector: corrupt one stored field in place so verifiers
+        go red. `output_hash` trips the chain; `signature`/`pubkey` trip ed25519
+        attribution (signed body, not chained) — proving the two are complementary."""
+        for e in self._sessions.get(session_id, []):
+            if e.seq != seq:
+                continue
+            if target == "output_hash":
+                e.output_hash = "TAMPERED" + e.output_hash[9:]
+            elif target == "pubkey":
+                sig = e.extra.setdefault("signature", {})
+                sig["public_key"] = "00" + (sig.get("public_key", "00") or "00")[2:]
+            else:  # "signature" (default): flip the signed body digest
+                sig = e.extra.setdefault("signature", {})
+                sig["body_sha256"] = "deadbeef" + (sig.get("body_sha256", "") or "")[8:]
+            return e
+        return None
+
 
 class SupabaseStore:
     """

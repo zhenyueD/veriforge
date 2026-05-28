@@ -1,6 +1,6 @@
 {
-  "version": "0.5.0",
-  "updated_at": "2026-05-24",
+  "version": "0.6.0",
+  "updated_at": "2026-05-27",
   "skills": [
     {
       "id": "claims-intent",
@@ -206,6 +206,7 @@
       ],
       "price_usdc": 0.04,
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
+      "deterministic": true,
       "tags": [
         "vertical:ecom-aftersales",
         "capability:fraud-detection",

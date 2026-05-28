@@ -190,8 +190,8 @@ services:
       ENDPOINT_HOST: docker
       VERIFORGE_X402_MODE: mock
       # Keep KIMI through proxy, but bypass for all internal services
-      NO_PROXY: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
-      no_proxy: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
+      NO_PROXY: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,claims-fraud-image,deep-research,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
+      no_proxy: "audit,activity,router,claims-intent,claims-emotion,claims-needs,claims-damage-vision,claims-compensation,claims-verify,claims-fraud-image,deep-research,text-summarize,text-translate,sentiment-analyze,localhost,127.0.0.1"
       PYTHONUNBUFFERED: "1"
     volumes:
       - ./marketplace:/marketplace
@@ -209,6 +209,7 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      VERIFORGE_DEMO: "1"  # enables /admin/tamper fault injector for the demo cockpit
       PYTHONUNBUFFERED: "1"
     volumes:
       - ./marketplace:/marketplace
