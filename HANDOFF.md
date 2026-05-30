@@ -6,6 +6,63 @@
 
 ## 最新 handoff
 
+### From: @duan (web Claude Code) → 本地 Claude Code
+### Date: 2026-05-30 (GMT+8)
+### 分支: `claude/friendly-mccarthy-C9hKd` → PR #8 (draft, 未合并)
+
+本 session 全程在 **Claude Code on the web 云端沙箱**里做。所有改动已 commit + push 到上面这个分支,开了 **draft PR #8**。本地接班第一件事:`git fetch origin claude/friendly-mccarthy-C9hKd`。
+
+#### ✅ 本 session 做完的核心工作:把"被任何 LLM 发现"做成真功能
+
+新增 **agent-facing skill discovery**(这是本次主线,已在沙箱实跑验证):
+
+1. **语义搜索 `GET /skills/search?q=<任务>&rank=relevance|verified&format=openai|anthropic`**
+   - 新文件 `marketplace/router/discovery.py`。用 **Gemini `gemini-embedding-001`** 做真向量检索(~190ms),**无 key/无网自动降级**到零依赖关键词检索(`method=lexical`),永不硬失败。
+   - 每条结果**自带可直接调用的 tool spec**(OpenAI/Anthropic 双格式)→ 搜索→调用一步到位。
+   - 实测命中:"faked photo"→`claims-fraud-image`、"translate"→`text-translate`、"how upset"→`claims-emotion/needs`。
+
+2. **可验证信誉排序 `rank=verified`**(差异化护城河)
+   - 排序 = `0.7*语义相关 + 0.3*链上信誉`。信誉来自审计链新端点 **`GET /reputation`**(`marketplace/audit/main.py` + `store.py` 的 `InMemoryStore.reputation()`),聚合每个 skill 的 `calls / verified_ok / pass_rate`,**密码学可证**。
+   - 实测:同一句 "analyze a damaged product photo",纯语义下 damage-vision(0.784) vs fraud-image(0.771)几乎并列;接入信誉(12/12 vs 1/3)后拉开成 0.760 vs 0.577。
+
+3. **零配置自描述清单**(让 agent 框架自动发现):`marketplace/router/main.py` 新增
+   `/.well-known/ai-plugin.json`、`/.well-known/agent.json`(A2A card)、`/llms.txt`;FastAPI 的 `/openapi.json` 自动收录全部新端点。
+
+4. **MCP 同步**:`marketplace/mcp/server.py` + `backend.py` 新增 `search_skills` 工具;
+   server 支持从 env 读 `HOST/PORT`(适配容器 http transport,stdio 不变)。
+
+5. **MCP 上架包**(为公开注册表发现做准备):`marketplace/mcp/` 新增 `Dockerfile`、`smithery.yaml`、`PUBLISH.md`(Smithery / 官方 MCP Registry / mcp.so / 本地 Claude Desktop 全套操作步骤)。
+
+6. **一键 demo 脚本** `scripts/demo_discovery.sh`:起好 router:8000 + audit:8001 后 `bash` 一下看五段实证。
+
+另外还加了 **`PITCH.md` / `PITCH.zh.md`**(demo-day 一页 pitch:4 支柱 + BYO skill + 叙事 hook)和 **`docs/architecture.png`**(graphviz 架构图)。
+
+#### 🚨 环境踩坑记录(本地/部署会遇到,务必看)
+
+1. **KIMI/Moonshot 在云沙箱被网络 allowlist 拦死**(`api.moonshot.ai`/`.cn` 都 `403 Host not in allowlist`)→ 所以 `/route`、`/run` 在沙箱跑不了。**本地不受影响**(你本机能连 Moonshot)。发现功能不依赖 KIMI,照常工作。
+2. **Gemini 可用**:`gemini-2.5-flash` + `gemini-embedding-001` 实测 OK(`generativelanguage.googleapis.com` 在 allowlist 内)。注意 `gemini-2.0-flash` 已对新 key 下线——claimsforge 用的是 2.5-flash,没踩坑。
+3. **`cryptography` 系统包在容器里 rust 绑定崩溃**(pyo3 PanicException),要 `pip install --upgrade --force-reinstall cryptography` 才能 import ed25519。本地正常的话忽略。
+4. **claimsforge 依赖**:所有 skill 都 `sys.path` import `/claimsforge`。沙箱里我 clone 到了 `/home/user/claimsforge`;本地用 `.env` 的 `CLAIMSFORGE_PATH` 指向你本机克隆路径。
+
+#### 🟡 待办 / 需要你或人工授权的
+
+1. **合并 PR #8 到 main** —— 我(web 端)能合,但等你确认。CI 目前无 workflow(check_runs=0)。
+2. **发布到 Smithery / 官方 MCP Registry** —— 沙箱**做不了**(出网被拦 + 需要你的 Smithery/GitHub 登录授权)。命令都在 `marketplace/mcp/PUBLISH.md`,你本地贴一次授权即可。
+   - 注:**mcp.so / Glama / PulseMCP 会自动爬公开 GitHub repo**,所以合并到 main + 仓库 public = 通过 git 就被这些索引发现,无需单独提交。
+3. **remote MCP 安装需要公网 router** → 要把 router 部署到 Cloud Run/Fly/Render 才能对外。本地用 stdio 直连 `localhost:8000` 无需部署。
+4. **可选**:把 `rank=verified` 这套"可发现性"实证写进 PITCH/README;给 router 补 Cloud Run 部署配置。
+
+#### ⚠️ 安全提醒
+
+本 session 用户在对话里**明文贴了两个真实 key**(Google + Moonshot),已写进 `.env`(gitignored,未进任何提交)。但 key 已暴露在聊天记录,**请尽快去两边后台 rotate/重置**。
+
+#### 🗂️ 改动文件清单(PR #8)
+
+- 新增: `marketplace/router/discovery.py`、`marketplace/mcp/{Dockerfile,smithery.yaml,PUBLISH.md}`、`scripts/demo_discovery.sh`、`PITCH.md`、`PITCH.zh.md`、`docs/architecture.png`
+- 改动: `marketplace/router/main.py`(search + 3 manifests)、`marketplace/audit/{main.py,store.py}`(/reputation)、`marketplace/mcp/{server.py,backend.py}`(search_skills + host/port)
+
+---
+
 ### From: @duan → @ryan (onboarding handoff)
 ### Date: 2026-05-23 22:30 (GMT+8)
 ### Until: ryan 加入后我们一起跑节奏
