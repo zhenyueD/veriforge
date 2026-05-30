@@ -19,7 +19,13 @@ from mcp.server.fastmcp import FastMCP
 
 import backend
 
-mcp = FastMCP("veriforge")
+# host/port matter only for http transport (e.g. Smithery's container runtime,
+# which injects PORT and expects the server on 0.0.0.0 at /mcp). stdio ignores them.
+mcp = FastMCP(
+    "veriforge",
+    host=os.getenv("HOST", "0.0.0.0"),
+    port=int(os.getenv("PORT", "8081")),
+)
 
 
 @mcp.tool()
@@ -34,6 +40,26 @@ async def list_skills() -> dict[str, Any]:
         return await backend.list_skills()
     except Exception as e:  # noqa: BLE001
         return {"error": True, "message": f"could not list skills: {e}"}
+
+
+@mcp.tool()
+async def search_skills(query: str, top_k: int = 5, rank: str = "verified") -> dict[str, Any]:
+    """Discover skills by natural-language task. Returns ranked matches, each with a
+    ready-to-call tool spec. Prefer this over list_skills when you know what you need.
+
+    Args:
+        query: The task to solve, e.g. "detect if a product photo was tampered with".
+        top_k: Max results to return.
+        rank: "verified" ranks by relevance blended with on-chain verified reputation
+              (discover the skill you can trust); "relevance" is pure semantic match.
+    Returns:
+        { query, rank, method, results: [{id, description, price_usdc, relevance,
+          trust, score, reputation, tool}] }
+    """
+    try:
+        return await backend.search_skills(query, top_k, rank)
+    except Exception as e:  # noqa: BLE001
+        return {"error": True, "message": f"could not search: {e}"}
 
 
 @mcp.tool()

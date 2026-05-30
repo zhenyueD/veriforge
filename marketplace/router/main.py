@@ -20,15 +20,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from router import plan_skill_chain, load_registry, upsert_skill
 from executor import execute_plan, emit_event
 from veriforge import earnings_preview
+import discovery  # semantic + verified-reputation skill search
 import obs      # optional Langfuse tracing; no-op when not configured
 import shield   # prompt-injection guard on user_input
 
 SHIELD_BLOCK = os.getenv("VERIFORGE_SHIELD_BLOCK", "1") != "0"
+PUBLIC_API_URL = os.getenv("VERIFORGE_PUBLIC_URL", "http://localhost:8000")
 
 app = FastAPI(title="VeriForge Router", version="0.1.0")
 
@@ -141,6 +144,110 @@ def skills_as_tools(format: str = "openai"):
             tools.append({"type": "function",
                           "function": {"name": name, "description": desc, "parameters": schema}})
     return {"format": format, "count": len(tools), "tools": tools}
+
+
+def _tool_spec(skill: dict, format: str) -> dict:
+    """One skill → an LLM-callable tool spec (OpenAI function or Anthropic tool)."""
+    name = skill["id"].replace("-", "_")
+    desc = f"{skill.get('description','')} [price {skill.get('price_usdc',0)} USDC/call]"
+    schema = _input_schema(skill)
+    if format == "anthropic":
+        return {"name": name, "description": desc, "input_schema": schema}
+    return {"type": "function",
+            "function": {"name": name, "description": desc, "parameters": schema}}
+
+
+@app.get("/skills/search")
+def skills_search(q: str, top_k: int = 5, rank: str = "relevance", format: str = "openai"):
+    """
+    Discover skills by natural-language task — the scalable alternative to dumping the
+    whole registry into an agent's context. ANY agent asks "what can do X?" and gets back
+    ranked, directly-callable tool specs.
+
+      q       : the task, e.g. "detect if a product photo was tampered with"
+      rank    : "relevance" (semantic match) | "verified" (blend match + on-chain
+                verified reputation — discover the skill you can actually trust)
+      format  : tool-spec dialect for the attached `tool` field (openai | anthropic)
+
+    Semantic ranking uses Gemini embeddings when GOOGLE_API_KEY is set, else a
+    dependency-free lexical fallback (see `method` in the response).
+    """
+    reg = load_registry()
+    res = discovery.search(q, reg.get("skills", []), top_k=top_k, rank=rank)
+    by_id = {s["id"]: s for s in reg.get("skills", [])}
+    for r in res["results"]:
+        r["tool"] = _tool_spec(by_id[r["id"]], format)  # ready to drop into a tool-call
+    res["tool_format"] = format
+    return res
+
+
+# ─────────────────── self-describing manifests (zero-config discovery) ───────────────────
+@app.get("/.well-known/ai-plugin.json")
+def ai_plugin_manifest():
+    """OpenAI-style plugin manifest so agent frameworks auto-discover the marketplace."""
+    return {
+        "schema_version": "v1",
+        "name_for_model": "veriforge",
+        "name_for_human": "VeriForge Skill Marketplace",
+        "description_for_model": (
+            "Discover, call, pay-per-use, and cryptographically verify AI skills. "
+            "GET /skills/search?q=<task>&rank=verified to find skills ranked by relevance "
+            "and on-chain verified reputation; each result includes a ready-to-call tool spec. "
+            "GET /skills/tools for the full tool list. Every call is x402-paid and SHA-256 "
+            "audit-chained; verify any result at GET /verify/<trace_id>."
+        ),
+        "description_for_human": "The App Store for verifiable AI skills.",
+        "auth": {"type": "none"},
+        "api": {"type": "openapi", "url": f"{PUBLIC_API_URL}/openapi.json"},
+        "logo_url": f"{PUBLIC_API_URL}/logo.png",
+    }
+
+
+@app.get("/.well-known/agent.json")
+def a2a_agent_card():
+    """A2A (Agent2Agent) agent card — lets agent-to-agent runtimes discover capabilities."""
+    reg = load_registry()
+    return {
+        "name": "VeriForge",
+        "description": "Marketplace of verifiable, pay-per-call AI skills.",
+        "url": PUBLIC_API_URL,
+        "version": reg.get("version", "0.1.0"),
+        "capabilities": {"streaming": False, "pushNotifications": False},
+        "defaultInputModes": ["text"],
+        "defaultOutputModes": ["application/json"],
+        "skills": [
+            {
+                "id": s["id"],
+                "name": s.get("name", s["id"]),
+                "description": s.get("description", ""),
+                "tags": s.get("tags", []),
+            }
+            for s in reg.get("skills", [])
+        ],
+    }
+
+
+@app.get("/llms.txt", response_class=PlainTextResponse)
+def llms_txt():
+    """LLM-readable index (llms.txt convention) — a crawlable map of the marketplace."""
+    reg = load_registry()
+    lines = [
+        "# VeriForge — The App Store for verifiable AI skills",
+        "",
+        "> Discover, call, pay-per-call (USDC), and cryptographically verify AI skills.",
+        "> Every invocation is SHA-256 audit-chained and ed25519 Proof-of-Skill signed.",
+        "",
+        "## Discovery",
+        f"- Semantic search: GET {PUBLIC_API_URL}/skills/search?q=<task>&rank=verified",
+        f"- All tools (OpenAI/Anthropic): GET {PUBLIC_API_URL}/skills/tools?format=openai",
+        f"- OpenAPI spec: GET {PUBLIC_API_URL}/openapi.json",
+        f"- Public verification: GET {PUBLIC_API_URL.replace('8000','8001')}/verify/<trace_id>",
+        "",
+        "## Skills",
+    ]
+    for s in reg.get("skills", []):
+        lines.append(f"- {s['id']} ({s.get('price_usdc',0)} USDC): {s.get('description','')}")
+    return "\n".join(lines) + "\n"
 
 
 @app.post("/route")
