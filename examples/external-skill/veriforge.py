@@ -33,8 +33,100 @@ import uuid
 import urllib.request
 from typing import Iterable, Optional
 
+import hashlib
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from starlette.responses import Response
+
+
+# ─── Proof-of-Skill signing (ed25519, creator-held keys) ─────────────────────
+# Each skill holds its OWN ed25519 private key — generated once and persisted to the
+# skill's local keystore, or injected per-container via VERIFORGE_SKILL_PRIVATE_KEY.
+# The key is NEVER derived from a shared secret, so the marketplace operator cannot
+# forge a skill's signature: it can verify with the published public key, but only the
+# skill that holds the private key can produce one. The PUBLIC key is published in the
+# registry, so anyone verifies "this output provably came from skill X" trustlessly.
+# Graceful: if `cryptography` is absent, signing is skipped and the skill still runs.
+SIGNING_ENABLED = os.getenv("VERIFORGE_SIGN", "1") != "0"
+# One private key per skill, persisted here (keep .keys/ gitignored). Defaults beside
+# the running skill (cwd/.keys) so each skill's key lives only with that skill — the
+# operator running router/audit/registry never has a copy.
+KEYSTORE_DIR = os.getenv("VERIFORGE_KEYSTORE_DIR", os.path.join(os.getcwd(), ".keys"))
+
+try:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+        Ed25519PrivateKey, Ed25519PublicKey,
+    )
+    from cryptography.hazmat.primitives import serialization
+    _HAS_CRYPTO = True
+except Exception:  # noqa: BLE001
+    _HAS_CRYPTO = False
+
+_KEY_CACHE: dict = {}
+
+
+def _load_or_create_private_key(skill_id: str):
+    """The skill's own ed25519 private key. Precedence:
+      1. VERIFORGE_SKILL_PRIVATE_KEY env (hex 32-byte seed) — per-container injection.
+      2. local keystore file `<KEYSTORE_DIR>/<skill_id>.ed25519` — loaded if present.
+      3. freshly generated — persisted (0600) so the public key stays stable.
+    No shared master secret exists: the operator never holds this key.
+    """
+    if skill_id in _KEY_CACHE:
+        return _KEY_CACHE[skill_id]
+
+    env_seed = os.getenv("VERIFORGE_SKILL_PRIVATE_KEY", "")
+    if env_seed:
+        key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(env_seed)[:32])
+        _KEY_CACHE[skill_id] = key
+        return key
+
+    path = os.path.join(KEYSTORE_DIR, f"{skill_id}.ed25519")
+    try:
+        with open(path, "rb") as f:
+            key = Ed25519PrivateKey.from_private_bytes(f.read()[:32])
+    except FileNotFoundError:
+        key = Ed25519PrivateKey.generate()
+        raw = key.private_bytes(serialization.Encoding.Raw,
+                                serialization.PrivateFormat.Raw,
+                                serialization.NoEncryption())
+        os.makedirs(KEYSTORE_DIR, exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(raw)
+        os.chmod(path, 0o600)
+    _KEY_CACHE[skill_id] = key
+    return key
+
+
+def skill_public_key(skill_id: str) -> str:
+    """Hex ed25519 public key for a skill — publish this in the registry."""
+    if not _HAS_CRYPTO:
+        return ""
+    pk = _load_or_create_private_key(skill_id).public_key()
+    return pk.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+
+
+def sign_bytes(skill_id: str, data: bytes) -> str:
+    """Sign data with the skill's own private key. Returns hex signature ('' if unavailable)."""
+    if not (_HAS_CRYPTO and SIGNING_ENABLED):
+        return ""
+    try:
+        return _load_or_create_private_key(skill_id).sign(data).hex()
+    except Exception:  # noqa: BLE001 — signing never blocks the response
+        return ""
+
+
+def verify_signature(public_key_hex: str, data: bytes, signature_hex: str) -> bool:
+    """Verify a Proof-of-Skill signature against a published public key. Trustless."""
+    if not _HAS_CRYPTO or not public_key_hex or not signature_hex:
+        return False
+    try:
+        pk = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
+        pk.verify(bytes.fromhex(signature_hex), data)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 # ─── Config (env-overridable) ────────────────────────────────────────────────
@@ -185,10 +277,27 @@ def attach_x402(
 
         # Settlement record = verification info + the (real) revenue split.
         settled = {**info, **split, "skill_id": skill_id}
+        ts = repr(time.time())
         response = await call_next(request)
-        response.headers["X-Payment-Settled"] = json.dumps(settled)[:1024]
-        response.headers["X-Payment-Mode"] = X402_MODE
-        return response
+
+        # Read the body so we can sign exactly what the skill returned (Proof of Skill).
+        body = b""
+        async for chunk in response.body_iterator:
+            body += chunk
+        body_sha = hashlib.sha256(body).hexdigest()
+        sig = sign_bytes(skill_id, f"{skill_id}|{body_sha}|{ts}".encode())
+
+        headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+        headers["X-Payment-Settled"] = json.dumps(settled)[:1024]
+        headers["X-Payment-Mode"] = X402_MODE
+        if sig:  # attributable + publicly verifiable: "skill X produced this exact body at ts"
+            headers["X-Skill-Id"] = skill_id
+            headers["X-Skill-Signed-Ts"] = ts
+            headers["X-Skill-Body-Sha256"] = body_sha
+            headers["X-Skill-Signature"] = sig
+            headers["X-Skill-Pubkey"] = skill_public_key(skill_id)
+        return Response(content=body, status_code=response.status_code,
+                        headers=headers, media_type=response.media_type)
 
     return app
 
@@ -205,7 +314,11 @@ def register_manifest(
     tags: Optional[list] = None,
     llm_compat: Optional[list] = None,
 ) -> dict:
-    """Build the registry manifest the marketplace stores for discovery + billing."""
+    """Build the registry manifest the marketplace stores for discovery + billing.
+
+    Includes the skill's ed25519 public key so verifiers can check Proof-of-Skill
+    signatures against a key the operator never had the private half of.
+    """
     return {
         "id": skill_id,
         "name": name or skill_id,
@@ -215,6 +328,7 @@ def register_manifest(
         "pay_to": pay_to,
         "tags": tags or [],
         "llm_compat": llm_compat or [],
+        "public_key": skill_public_key(skill_id),
     }
 
 

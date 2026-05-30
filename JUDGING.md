@@ -32,6 +32,10 @@ VeriForge is the **App Store for verifiable AI skills**: any FastAPI skill adds 
 git clone <this-repo> && cd veriforge && cp .env.template .env
 #    fill MOONSHOT_API_KEY (KIMI) + GOOGLE_API_KEY (Gemini)
 
+# 1b. Mint each skill's own Proof-of-Skill key (creator-held; only public keys
+#     land in the registry — the marketplace operator never holds a private key)
+python3 scripts/gen_keys.py
+
 # 2. Boot 14 services (10 skills + router + audit + activity + web)
 docker compose up -d            # ~60s first time (pip), ~30s after
 

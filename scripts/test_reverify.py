@@ -1,10 +1,12 @@
 """
 Unit tests for Feature B re-verify logic — no running stack required.
 
-We stub the audit fetch with a synthetic chain and sign entries with the SAME
-master secret the registry pubkeys were derived from, so a clean chain verifies
-and a tampered one names the offending skill. Run:
+We stub the audit fetch with a synthetic chain and sign entries with each skill's
+OWN creator-held key (the same key whose public half is published in the registry —
+run scripts/gen_keys.py first), so a clean chain verifies and a tampered one names
+the offending skill. Run:
 
+    python3 scripts/gen_keys.py    # ensure keys + registry pubkeys exist
     /Users/duan/code/claimsforge/.venv/bin/python scripts/test_reverify.py
 """
 from __future__ import annotations

@@ -28,3 +28,10 @@ external/MiroFlow/
 
 # Local test artifacts
 *.bak
+
+# Proof-of-Skill private keys — creator-held, NEVER committed.
+# Only public keys live in the registry. Run scripts/gen_keys.py to (re)create.
+.keys/
+skills/*/.keys/
+examples/*/.keys/
+*.ed25519
