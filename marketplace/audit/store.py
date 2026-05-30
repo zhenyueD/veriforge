@@ -30,6 +30,23 @@ class InMemoryStore:
                     return e
         return None
 
+    def reputation(self) -> dict[str, dict]:
+        """Aggregate per-skill verifiable track record across all sessions.
+        verified_ok counts entries whose verify_hook passed; pass_rate is over
+        entries that actually ran a verify (verify_passed is not None)."""
+        agg: dict[str, dict] = {}
+        for entries in self._sessions.values():
+            for e in entries:
+                r = agg.setdefault(e.skill_id, {"calls": 0, "verified": 0, "verified_ok": 0})
+                r["calls"] += 1
+                if e.verify_passed is not None:
+                    r["verified"] += 1
+                    if e.verify_passed:
+                        r["verified_ok"] += 1
+        for r in agg.values():
+            r["pass_rate"] = round(r["verified_ok"] / r["verified"], 4) if r["verified"] else None
+        return agg
+
     def tamper(self, session_id: str, seq: int, target: str) -> Optional[AuditEntry]:
         """DEMO-ONLY fault injector: corrupt one stored field in place so verifiers
         go red. `output_hash` trips the chain; `signature`/`pubkey` trip ed25519

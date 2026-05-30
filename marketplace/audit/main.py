@@ -108,6 +108,16 @@ def get_session(session_id: str):
     }
 
 
+@app.get("/reputation")
+def reputation():
+    """Per-skill verifiable track record (calls / verified_ok / pass_rate).
+    Powers trust-ranked discovery in the router's /skills/search. Empty if the
+    active store can't aggregate (e.g. Supabase backend without this view)."""
+    if not hasattr(store, "reputation"):
+        return {"skills": {}, "backend": type(store).__name__}
+    return {"skills": store.reputation(), "backend": type(store).__name__}
+
+
 class TamperRequest(BaseModel):
     session_id: str
     seq: int = Field(ge=0)

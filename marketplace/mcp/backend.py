@@ -29,6 +29,15 @@ async def list_skills() -> dict[str, Any]:
     return r.json()
 
 
+async def search_skills(query: str, top_k: int = 5, rank: str = "verified") -> dict[str, Any]:
+    r = await _get_client().get(
+        "/skills/search",
+        params={"q": query, "top_k": top_k, "rank": rank, "format": "anthropic"},
+    )
+    r.raise_for_status()
+    return r.json()
+
+
 async def plan_skills(user_input: str) -> dict[str, Any]:
     r = await _get_client().post("/route", json={"user_input": user_input})
     r.raise_for_status()

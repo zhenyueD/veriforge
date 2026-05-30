@@ -37,6 +37,26 @@ async def list_skills() -> dict[str, Any]:
 
 
 @mcp.tool()
+async def search_skills(query: str, top_k: int = 5, rank: str = "verified") -> dict[str, Any]:
+    """Discover skills by natural-language task. Returns ranked matches, each with a
+    ready-to-call tool spec. Prefer this over list_skills when you know what you need.
+
+    Args:
+        query: The task to solve, e.g. "detect if a product photo was tampered with".
+        top_k: Max results to return.
+        rank: "verified" ranks by relevance blended with on-chain verified reputation
+              (discover the skill you can trust); "relevance" is pure semantic match.
+    Returns:
+        { query, rank, method, results: [{id, description, price_usdc, relevance,
+          trust, score, reputation, tool}] }
+    """
+    try:
+        return await backend.search_skills(query, top_k, rank)
+    except Exception as e:  # noqa: BLE001
+        return {"error": True, "message": f"could not search: {e}"}
+
+
+@mcp.tool()
 async def plan_skills(user_input: str) -> dict[str, Any]:
     """Ask the KIMI router which skills (and in what order) would serve a request,
     WITHOUT executing or paying. Use to preview the plan.
