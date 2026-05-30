@@ -19,7 +19,13 @@ from mcp.server.fastmcp import FastMCP
 
 import backend
 
-mcp = FastMCP("veriforge")
+# host/port matter only for http transport (e.g. Smithery's container runtime,
+# which injects PORT and expects the server on 0.0.0.0 at /mcp). stdio ignores them.
+mcp = FastMCP(
+    "veriforge",
+    host=os.getenv("HOST", "0.0.0.0"),
+    port=int(os.getenv("PORT", "8081")),
+)
 
 
 @mcp.tool()

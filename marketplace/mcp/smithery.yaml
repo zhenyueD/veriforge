@@ -1,0 +1,33 @@
+# Smithery deployment manifest — lists the VeriForge MCP server on smithery.ai
+# so any MCP host (Claude Desktop, Cursor, …) can discover & install it.
+# Docs: https://smithery.ai/docs/build/project-config
+runtime: container
+
+build:
+  dockerfile: Dockerfile
+  dockerBuildPath: .
+
+startCommand:
+  type: http
+  # User-supplied config, validated against this schema and passed as env vars.
+  configSchema:
+    type: object
+    properties:
+      veriforgeRouterUrl:
+        type: string
+        title: VeriForge Router URL
+        description: Base URL of a running VeriForge router (the BFF over skills/audit/activity).
+        default: http://localhost:8000
+    required: []
+  # Map validated config → process env the server reads.
+  exampleConfig:
+    veriforgeRouterUrl: https://your-veriforge-router.example.com
+  commandFunction: |
+    (config) => ({
+      command: "python",
+      args: ["server.py"],
+      env: {
+        MCP_TRANSPORT: "streamable-http",
+        VERIFORGE_ROUTER_URL: config.veriforgeRouterUrl || "http://localhost:8000"
+      }
+    })
