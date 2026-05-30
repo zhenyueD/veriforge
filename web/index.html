@@ -204,6 +204,45 @@
 
   /* ─── Verify Panel ─── */
   #verify { padding-top: 50px; }
+  /* ─── Discovery search (semantic + verified-reputation ranking) ─── */
+  .discovery { margin-bottom: 26px; }
+  .disco-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .disco-row input { flex: 1; min-width: 240px; background: var(--bg-1); color: var(--fg);
+                     border: 1px solid var(--border-strong); border-radius: 10px;
+                     padding: 13px 16px; font-size: 14px; outline: none; }
+  .disco-row input:focus { border-color: var(--accent); }
+  .disco-toggle { display: inline-flex; border: 1px solid var(--border-strong);
+                  border-radius: 10px; overflow: hidden; }
+  .disco-toggle button { background: var(--bg-1); color: var(--fg-dim); border: 0;
+                         padding: 0 16px; font-size: 12px; cursor: pointer;
+                         font-family: "JetBrains Mono", monospace; }
+  .disco-toggle button.on { background: var(--accent); color: #07090f; font-weight: 700; }
+  .disco-meta { margin-top: 13px; font-size: 12px; color: var(--fg-mute);
+                font-family: "JetBrains Mono", monospace; display: flex; gap: 14px;
+                align-items: center; flex-wrap: wrap; }
+  .method-badge { padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+                  background: var(--bg-2); }
+  .method-badge.embedding { color: var(--accent-2); border-color: rgba(178,133,255,0.4); }
+  .method-badge.lexical { color: var(--accent-3); border-color: rgba(255,164,106,0.4); }
+  .disco-clear { color: var(--fg-dim); cursor: pointer; text-decoration: underline;
+                 background: none; border: 0; font-size: 12px; padding: 0; }
+  /* result-card ranking visuals */
+  .skill-card.result { position: relative; }
+  .rank-num { position: absolute; top: 16px; right: 18px; font-size: 13px; color: var(--fg-mute);
+              font-family: "JetBrains Mono", monospace; }
+  .metrics { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 12px; }
+  .metric { display: grid; grid-template-columns: 76px 1fr 40px; align-items: center;
+            gap: 8px; font-size: 11px; font-family: "JetBrains Mono", monospace; color: var(--fg-dim); }
+  .track { height: 6px; border-radius: 999px; background: var(--bg-3); overflow: hidden; }
+  .fill { height: 100%; border-radius: 999px; }
+  .fill.relevance { background: var(--grad-1); }
+  .fill.trust { background: var(--grad-2); }
+  .fill.score { background: linear-gradient(135deg, var(--ok), var(--accent-2)); }
+  .metric .val { text-align: right; color: var(--fg); }
+  .rep-line { font-size: 11px; color: var(--fg-mute); font-family: "JetBrains Mono", monospace;
+              margin-bottom: 14px; }
+  .rep-line b { color: var(--ok); }
+
   .verify-row { display: flex; gap: 10px; margin-bottom: 14px; }
   .verify-row input { flex: 1; background: var(--bg-1); color: var(--fg);
                        border: 1px solid var(--border); border-radius: 8px;
@@ -301,8 +340,19 @@
     <div>
       <span class="section-eyebrow">Catalog</span>
       <h2 class="section-title">Skill Marketplace</h2>
-      <p class="section-sub">Any agent can discover, invoke, and pay for these skills. Hover for details — click to try in the demo below.</p>
-    </div>  
+      <p class="section-sub">Any agent can discover, invoke, and pay for these skills. Search by task — results are ranked by semantic match <b>blended with on-chain verified reputation</b>, so you find the skill you can actually trust.</p>
+    </div>
+  </div>
+  <div class="discovery">
+    <div class="disco-row">
+      <input id="searchInput" placeholder='Describe a task — e.g. "detect if a product photo was faked"'>
+      <div class="disco-toggle" id="rankToggle">
+        <button data-rank="verified" class="on">✓ Trust-ranked</button>
+        <button data-rank="relevance">Relevance</button>
+      </div>
+      <button class="btn btn-primary" id="searchBtn">Search</button>
+    </div>
+    <div class="disco-meta" id="discoMeta" style="display:none;"></div>
   </div>
   <div class="skills-grid" id="skillsGrid">
     <div class="skill-card skill-skeleton" style="height:280px;"></div>
@@ -389,7 +439,7 @@
   </div>
   <div class="footer-meta">
     Built solo in 5 days · UCWS Singapore Hackathon 2026 · Skills Track<br>
-    9 skills · 1 marketplace · 0 vendor lock-in
+    <span id="footerSkillCount">9</span> skills · 1 marketplace · 0 vendor lock-in
   </div>
 </footer>
 
@@ -528,6 +578,7 @@ async function loadMarketplace() {
     }
     $('statSkills').textContent = skills.length;
     $('navStatus').textContent = `${skills.length} skills live`;
+    $('footerSkillCount').textContent = skills.length;
     renderSkills(skills);
   } catch (e) {
     $('skillsGrid').textContent = `Failed to load marketplace: ${e.message}`;
@@ -589,6 +640,110 @@ function renderSkills(skills) {
     card.appendChild(footer);
     grid.appendChild(card);
   }
+}
+
+// ─── Discovery: semantic search ranked by verified reputation ───
+let currentRank = 'verified';
+
+$('rankToggle').querySelectorAll('button').forEach(b => {
+  b.onclick = () => {
+    $('rankToggle').querySelectorAll('button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    currentRank = b.dataset.rank;
+    if ($('searchInput').value.trim()) runSkillSearch();
+  };
+});
+$('searchBtn').onclick = runSkillSearch;
+$('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') runSkillSearch(); });
+
+async function runSkillSearch() {
+  const q = $('searchInput').value.trim();
+  const meta = $('discoMeta');
+  if (!q) { meta.style.display = 'none'; loadMarketplace(); return; }
+  meta.style.display = 'flex';
+  while (meta.firstChild) meta.removeChild(meta.firstChild);
+  meta.appendChild(document.createTextNode('⏳ searching…'));
+  try {
+    const r = await fetch(`${ROUTER_URL}/skills/search?q=${encodeURIComponent(q)}&rank=${currentRank}&top_k=8`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    renderSearchResults(await r.json());
+  } catch (e) {
+    while (meta.firstChild) meta.removeChild(meta.firstChild);
+    meta.appendChild(el('span', {text: `Search unavailable (${e.message}). Is the router up on :8000?`}));
+  }
+}
+
+function renderSearchResults(data) {
+  const meta = $('discoMeta');
+  while (meta.firstChild) meta.removeChild(meta.firstChild);
+  const methodLabel = data.method === 'embedding' ? 'Gemini embeddings' : 'lexical fallback';
+  meta.appendChild(el('span', {text: `${(data.results || []).length} matches`}));
+  meta.appendChild(el('span', {class: `method-badge ${data.method}`, text: methodLabel}));
+  meta.appendChild(el('span', {text: `rank: ${data.rank}`}));
+  meta.appendChild(el('span', {text: `${data.latency_ms} ms`}));
+  meta.appendChild(el('button', {
+    class: 'disco-clear', text: 'clear ✕',
+    onclick: () => { $('searchInput').value = ''; meta.style.display = 'none'; loadMarketplace(); },
+  }));
+
+  const grid = $('skillsGrid');
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
+  if (!(data.results || []).length) {
+    grid.appendChild(el('div', {class: 'empty-state', text: 'No skills matched. Try different words.'}));
+    return;
+  }
+  data.results.forEach((res, i) => grid.appendChild(searchCard(res, i, data.rank)));
+}
+
+const pct = (x) => Math.round((x || 0) * 100);
+
+function metricBar(label, value, cls) {
+  return el('div', {class: 'metric'}, [
+    el('span', {text: label}),
+    el('div', {class: 'track'}, [el('div', {class: `fill ${cls}`, style: `width:${pct(value)}%`})]),
+    el('span', {class: 'val', text: (value || 0).toFixed(2)}),
+  ]);
+}
+
+function searchCard(res, i, rank) {
+  const price = res.price_usdc !== undefined ? res.price_usdc : 0.001;
+  const card = el('div', {
+    class: 'skill-card result',
+    onclick: () => {
+      $('input').value = EXAMPLE_INPUT[res.id] || `Try ${res.name}…`;
+      $('demo').scrollIntoView({behavior: 'smooth'});
+    },
+  });
+  card.appendChild(el('span', {class: 'rank-num', text: `#${i + 1}`}));
+  card.appendChild(el('div', {class: 'skill-icon', text: ICONS[res.id] || '🧩'}));
+  card.appendChild(el('div', {class: 'skill-name', text: res.name || res.id}));
+  card.appendChild(el('div', {class: 'skill-desc', text: (res.description || '').slice(0, 150)}));
+
+  const metrics = el('div', {class: 'metrics'});
+  metrics.appendChild(metricBar('relevance', res.relevance, 'relevance'));
+  if (rank === 'verified') {
+    metrics.appendChild(metricBar('trust', res.trust, 'trust'));
+    metrics.appendChild(metricBar('score', res.score, 'score'));
+  }
+  card.appendChild(metrics);
+
+  const rep = res.reputation || {};
+  const repLine = el('div', {class: 'rep-line'});
+  if ((rep.calls || 0) > 0) {
+    const pr = rep.pass_rate != null ? rep.pass_rate : rep.verified_ok / rep.calls;
+    repLine.appendChild(document.createTextNode('on-chain: '));
+    repLine.appendChild(el('b', {text: `${rep.verified_ok}/${rep.calls} verified`}));
+    repLine.appendChild(document.createTextNode(` · pass ${pct(pr)}%`));
+  } else {
+    repLine.appendChild(document.createTextNode('on-chain: no calls yet'));
+  }
+  card.appendChild(repLine);
+
+  const footer = el('div', {class: 'skill-footer'});
+  footer.appendChild(el('span', {class: 'skill-price', text: formatUsdc(price)}));
+  footer.appendChild(el('span', {class: 'skill-try', text: 'Try it →'}));
+  card.appendChild(footer);
+  return card;
 }
 
 // ─── Examples wiring ───

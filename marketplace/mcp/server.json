@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.json",
+  "name": "io.github.zhenyueD/veriforge",
+  "description": "Discover, compose, pay-per-call, and cryptographically audit verifiable AI skills across LLM providers. Semantic search returns ready-to-call tool specs ranked by on-chain verified reputation.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/zhenyueD/veriforge",
+    "source": "github",
+    "subfolder": "marketplace/mcp"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://REPLACE_WITH_PUBLIC_MCP_URL/mcp"
+    }
+  ]
+}
