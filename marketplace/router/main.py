@@ -68,6 +68,7 @@ class RegisterRequest(BaseModel):
     outputs: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     llm_compat: list[str] = Field(default_factory=list)
+    public_key: str = ""   # ed25519 Proof-of-Skill key (creator-held; operator can't forge)
 
 
 @app.get("/health")

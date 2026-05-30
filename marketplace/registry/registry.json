@@ -29,7 +29,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "a7199eccf7bd6b58ae6c2cd36e48b0f96501e9723813114a9ba8183b2c07a389"
+      "public_key": "15a159c334b09e5767e43677c3a02ed4a37e20e63c1b712cbce56f8fadd59f6d"
     },
     {
       "id": "claims-emotion",
@@ -58,7 +58,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "54cf488a467524a6f2664c7b43042c513458aa71c9b9f0d5ee5de5c9545d949c"
+      "public_key": "9e93ec9098b03ca8ceb46fab178d1a8da489bd8029c211f3704c34b60f74a45e"
     },
     {
       "id": "claims-needs",
@@ -88,7 +88,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "c097c0d0c058268a85ad5aa7d7e5f437b6e56355e6e0b47d8773453a79653b18"
+      "public_key": "c313aa008944bc630c008d5d740ed634ec9f61cfed90eb0fd6dca9eb0168cc0c"
     },
     {
       "id": "claims-damage-vision",
@@ -121,7 +121,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "7c3af50d85b1e767f92bcb5ebaa81afe0a36a041a8472c59ee392b05a64ed551"
+      "public_key": "8e643d7f64f90810a845c156d466e8d435933e84df93544d2d96109d7874bdc0"
     },
     {
       "id": "claims-compensation",
@@ -152,7 +152,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "404eab8de11f4cd591e35d0c0d0702dddc53c3b75e333106e3cdbc28aeb6d2e9"
+      "public_key": "a419f207337e34e984bb539bbb6deb3e7f4d8acae9f4416e5d32c32eb3180a99"
     },
     {
       "id": "claims-verify",
@@ -181,7 +181,7 @@
         "gemini"
       ],
       "pay_to": "0x72eb6d5c1be9854ff4739217d07eb177e27a9bf1",
-      "public_key": "1da29a455e80b1052e38c81cfe600410a42c8ea17b07ad4ea0fcff4db5c47141"
+      "public_key": "676f1fa1179a2107ab095a1aaf17f28b24dc0958cec46459b2d3704c2abca0a1"
     },
     {
       "id": "claims-fraud-image",
@@ -216,7 +216,7 @@
       "llm_compat": [
         "any"
       ],
-      "public_key": "6b7106fb7c2852e3e15b00830d8026f9c4bb18c7e406724cf46862c48019948b"
+      "public_key": "d37370657a72cfc9af3fbc97bc0c75a9780c99f4307bdf8c45495292a78e8592"
     },
     {
       "id": "text-summarize",
@@ -242,7 +242,7 @@
         "any"
       ],
       "pay_to": "0x49c34f8cc150ceaf78953b7aa4ad261136d2f839",
-      "public_key": "e93b9d0b845bc25406da1983615f2c6cfbf0db498ea2f8947f11fe69f9dc0ba6"
+      "public_key": "590bf073c1a6e2f6a30f5f15e2d583e42c745a0fbcabac44fab824fdb6e40092"
     },
     {
       "id": "text-translate",
@@ -268,7 +268,7 @@
         "any"
       ],
       "pay_to": "0x46626bb879bcb581d3d950a9df630a2927c68d36",
-      "public_key": "ec02455c416bbdc0d3fd70339e2f8ef32364f8baec3de3a5fc70e07ac0268fa3"
+      "public_key": "186736bfa31465130ef7469954dedfbf8af150c0b0992f2cb397d9e20defcfc8"
     },
     {
       "id": "sentiment-analyze",
@@ -293,7 +293,7 @@
         "any"
       ],
       "pay_to": "0x65ec6c5d69612665643f09c15806f28715b3773b",
-      "public_key": "03909bd20dddbf0364ed731e4ec2b60cfddf866f9ba9a40678adde9492c954c0"
+      "public_key": "7c837ccb8aa02c37c19a7a144a12ebbe7c0cfd6910c1ac3cf8ae7592cf9b4d0e"
     },
     {
       "id": "deep-research",
@@ -326,7 +326,7 @@
         "openai",
         "gemini"
       ],
-      "public_key": "e4b4758ef26083df1316b2f1257e483118298bdd3680e1ddf388b8963a67711a"
+      "public_key": "d4f879b5df72df840e5e0e7eebc5fb3b40655318f6849aafb7a7fb11e11e0c94"
     }
   ]
 }
