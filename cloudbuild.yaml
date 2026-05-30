@@ -1,0 +1,29 @@
+# Build all three VeriForge backend images and push to Artifact Registry.
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_REGION=asia-southeast1,_REPO=veriforge
+# Driven by scripts/deploy_cloudrun.sh — you normally don't call this directly.
+substitutions:
+  _REGION: asia-southeast1
+  _REPO: veriforge
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/router:latest'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/audit:latest'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/activity:latest'
+
+steps:
+  - id: build-router
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'marketplace/router/Dockerfile',
+           '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/router:latest', '.']
+  - id: build-audit
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'marketplace/audit/Dockerfile',
+           '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/audit:latest', '.']
+  - id: build-activity
+    name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'marketplace/activity/Dockerfile',
+           '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/activity:latest', '.']
