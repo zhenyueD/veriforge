@@ -42,7 +42,7 @@ gcloud artifacts repositories describe "$REPO" --location "$REGION" >/dev/null 2
   gcloud artifacts repositories create "$REPO" --repository-format=docker \
     --location "$REGION" --description "VeriForge backend images"
 
-echo "▶ building 3 images via Cloud Build…"
+echo "▶ building backend + skill images via Cloud Build…"
 gcloud builds submit --config cloudbuild.yaml \
   --substitutions="_REGION=${REGION},_REPO=${REPO}" .
 
@@ -82,12 +82,28 @@ gcloud run services update vf-router --region "$REGION" \
   --update-env-vars="VERIFORGE_PUBLIC_URL=${ROUTER_URL}" >/dev/null
 echo "  router → $ROUTER_URL"
 
+echo "▶ deploying claims-intent…"
+SKILL_ENV="CLAIMSFORGE_PATH=/claimsforge"
+[[ -n "${GOOGLE_API_KEY:-}" ]] && SKILL_ENV+=",GOOGLE_API_KEY=${GOOGLE_API_KEY}"
+[[ -n "${GEMINI_TEXT_MODEL:-}" ]] && SKILL_ENV+=",GEMINI_TEXT_MODEL=${GEMINI_TEXT_MODEL}"
+[[ -n "${GEMINI_VISION_MODEL:-}" ]] && SKILL_ENV+=",GEMINI_VISION_MODEL=${GEMINI_VISION_MODEL}"
+CLAIMS_INTENT_URL="$(deploy vf-claims-intent "${IMG_BASE}/claims-intent:latest" 7001 \
+  --set-env-vars="$SKILL_ENV")"
+echo "  claims-intent → $CLAIMS_INTENT_URL"
+
+echo "▶ deploying claims-damage-vision…"
+CLAIMS_DAMAGE_VISION_URL="$(deploy vf-claims-damage-vision "${IMG_BASE}/claims-damage-vision:latest" 7004 \
+  --set-env-vars="$SKILL_ENV")"
+echo "  claims-damage-vision → $CLAIMS_DAMAGE_VISION_URL"
+
 cat <<EOF
 
 ✅ Deployed.
-   router   : ${ROUTER_URL}
-   audit    : ${AUDIT_URL}
-   activity : ${ACTIVITY_URL}
+   router                 : ${ROUTER_URL}
+   audit                  : ${AUDIT_URL}
+   activity               : ${ACTIVITY_URL}
+   claims-intent          : ${CLAIMS_INTENT_URL}
+   claims-damage-vision   : ${CLAIMS_DAMAGE_VISION_URL}
 
 Verify:
    curl "${ROUTER_URL}/skills/search?q=faked%20photo&rank=verified"
