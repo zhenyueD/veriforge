@@ -343,6 +343,7 @@
       <p class="section-sub">Any agent can discover, invoke, and pay for these skills. Search by task — results are ranked by semantic match <b>blended with on-chain verified reputation</b>, so you find the skill you can actually trust.</p>
     </div>
   </div>
+  <div id="routerStatusBanner" style="display:none; padding:14px 18px; margin: 0 0 18px; border-radius:12px; background:#2d1e00; color:#ffdb8c; border:1px solid rgba(255,216,108,0.3);"></div>
   <div class="discovery">
     <div class="disco-row">
       <input id="searchInput" placeholder='Describe a task — e.g. "detect if a product photo was faked"'>
@@ -366,13 +367,22 @@
     <div>
       <span class="section-eyebrow">List Your Skills</span>
       <h2 class="section-title">List Your Skills</h2>
-      <p class="section-sub">Paste a skill registration payload or a `monetize(...)` call and register it to the marketplace. Eg. {"id":"my-skill","pay_to":"0x...","price_usdc":0.02}  </p>
+      <p class="section-sub">Register a custom skill to the marketplace and publish its price per call.</p>
     </div>
   </div>
   <div class="verify-row">
-    <input id="skillInput" placeholder='{"id":"my-skill","pay_to":"0x...","price_usdc":0.02}'>
-    <button class="btn btn-primary" id="CopyBtn">Copy</button>
+    <input id="skillIdInput" placeholder='Skill ID (e.g. my-skill)'>
   </div>
+  <div class="verify-row">
+    <input id="skillNameInput" placeholder='Display name (optional)'>
+  </div>
+  <div class="verify-row">
+    <input id="skillPriceInput" type="number" step="0.000001" min="0" placeholder='Price per call (USDC)'>
+  </div>
+  <div class="verify-row">
+    <input id="skillPayToInput" placeholder='Pay-to wallet (0x...)'>
+  </div>
+  <button class="btn btn-primary" id="RegisterBtn">Register Skill</button>
 </section>
 
 <section id="demo">
@@ -476,14 +486,16 @@ function el(tag, props = {}, children = []) {
 const ALL_SKILLS = [
   {
     id: 'claims-intent', name: 'Claims Intent Classifier', icon: '🎯',
-    category: 'claims', price: 0.002, 
+    category: 'claims', price: 0.002,
+    public_key: '15a159c334b09e5767e43677c3a02ed4a37e20e63c1b712cbce56f8fadd59f6d',
     description: 'Classify customer intent: claim_with_image / claim_text_only / general_inquiry / needs_clarification / followup_on_prior_claim.',
     tags: ['vertical:classification', 'capability:nlp'],
     example: 'My mug arrived cracked, order ORD-1234.',
   },
   {
     id: 'claims-emotion', name: 'Claims Emotion Grader', icon: '💗',
-    category: 'claims', price: 0.002, 
+    category: 'claims', price: 0.002,
+    public_key: '9e93ec9098b03ca8ceb46fab178d1a8da489bd8029c211f3704c34b60f74a45e',
     description: 'Grade customer affect 0-10 with risk level (LOW/MEDIUM/HIGH/CRITICAL). Detects legal-threat, regulator, media, chargeback signals.',
     tags: ['vertical:sentiment', 'capability:escalation'],
     example: 'This is the third time I have written. My lawyer will hear about this.',
@@ -491,6 +503,7 @@ const ALL_SKILLS = [
   {
     id: 'claims-needs', name: 'Claims Needs Discovery', icon: '🧭',
     category: 'claims', price: 0.002,
+    public_key: 'c313aa008944bc630c008d5d740ed634ec9f61cfed90eb0fd6dca9eb0168cc0c',
     description: 'Surface surface/latent/emotional needs. Outputs retention_risk and suggested_offer_bias (refund vs replacement vs store-credit).',
     tags: ['vertical:discovery', 'capability:context'],
     example: 'My mug arrived cracked. It was a birthday gift for my sister this Friday.',
@@ -498,6 +511,7 @@ const ALL_SKILLS = [
   {
     id: 'claims-damage-vision', name: 'Claims Damage Vision', icon: '📸',
     category: 'claims', price: 0.015,
+    public_key: '8e643d7f64f90810a845c156d466e8d435933e84df93544d2d96109d7874bdc0',
     description: 'Assess product damage from a photo using Gemini Vision. 96.7% accuracy on labeled eval set. Catches text/image mismatch attacks.',
     tags: ['vertical:vision', 'capability:gemini'],
     example: 'My mug has a 2cm crack along the rim.',
@@ -505,6 +519,7 @@ const ALL_SKILLS = [
   {
     id: 'claims-compensation', name: 'Claims Compensation Proposer', icon: '💰',
     category: 'claims', price: 0.005,
+    public_key: 'a419f207337e34e984bb539bbb6deb3e7f4d8acae9f4416e5d32c32eb3180a99',
     description: 'Pick matching policy from 26-rule DSL + RAG over merchant KB + live precedent. Propose typed offer with empathetic justification.',
     tags: ['vertical:policy', 'capability:reasoning'],
     example: 'My mug arrived cracked, order ORD-1234.',
@@ -512,6 +527,7 @@ const ALL_SKILLS = [
   {
     id: 'claims-verify', name: 'Claims Offer Verifier', icon: '✅',
     category: 'claims', price: 0.003,
+    public_key: '676f1fa1179a2107ab095a1aaf17f28b24dc0958cec46459b2d3704c2abca0a1',
     description: 'Hard-cap proposed offer to policy max with emotion-driven upward flex. Escalate to human when confidence < 0.5 and amount > $50.',
     tags: ['vertical:verification', 'capability:gate'],
     example: 'My mug arrived cracked, order ORD-1234.',
@@ -519,6 +535,7 @@ const ALL_SKILLS = [
   {
     id: 'claims-fraud-image', name: 'Claims Fraud Image Check', icon: '🔍',
     category: 'claims', price: 0.008,
+    public_key: 'd37370657a72cfc9af3fbc97bc0c75a9780c99f4307bdf8c45495292a78e8592',
     description: 'Deterministic image-provenance fraud check. pHash collision detection + EXIF age check catch recycled photos. No LLM required.',
     tags: ['vertical:fraud', 'capability:deterministic'],
     example: 'Verify image provenance for claim ORD-1234.',
@@ -526,6 +543,7 @@ const ALL_SKILLS = [
   {
     id: 'text-summarize', name: 'Text Summarizer', icon: '📑',
     category: 'horizontal', price: 0.005,
+    public_key: '590bf073c1a6e2f6a30f5f15e2d583e42c745a0fbcabac44fab824fdb6e40092',
     description: 'Summarize long-form text into structured bullet points with configurable length (executive/detailed/casual). Domain-agnostic.',
     tags: ['horizontal:utility', 'capability:summarization'],
     example: 'Summarize this article into 5 bullets: Lorem ipsum dolor sit amet…',
@@ -533,6 +551,7 @@ const ALL_SKILLS = [
   {
     id: 'text-translate', name: 'Text Translator', icon: '🌐',
     category: 'horizontal', price: 0.008,
+    public_key: '186736bfa31465130ef7469954dedfbf8af150c0b0992f2cb397d9e20defcfc8',
     description: 'Translate text between languages with automatic source detection. Preserves formatting and domain terminology.',
     tags: ['horizontal:utility', 'capability:translation'],
     example: 'Translate this paragraph to Chinese: Yesterday the cat sat on the mat.',
@@ -540,6 +559,7 @@ const ALL_SKILLS = [
   {
     id: 'sentiment-analyze', name: 'Sentiment Analyzer', icon: '😊',
     category: 'horizontal', price: 0.003,
+    public_key: '7c837ccb8aa02c37c19a7a144a12ebbe7c0cfd6910c1ac3cf8ae7592cf9b4d0e',
     description: 'Analyze sentiment into positive/neutral/negative with emotion breakdown and intensity score. Domain-agnostic.',
     tags: ['horizontal:utility', 'capability:sentiment'],
     example: 'I am extremely disappointed with this purchase.',
@@ -547,6 +567,7 @@ const ALL_SKILLS = [
   {
     id: 'deep-research', name: 'Deep Research (MiroFlow)', icon: '🔬',
     category: 'horizontal', price: 0.050,
+    public_key: 'd4f879b5df72df840e5e0e7eebc5fb3b40655318f6849aafb7a7fb11e11e0c94',
     description: 'Multi-step internet research powered by MiroMind\'s MiroFlow framework. Plans & executes research trajectory over web, cross-references sources.',
     tags: ['horizontal:advanced', 'capability:research'],
     example: 'Research the history of ceramic manufacturing in 2024.',
@@ -566,7 +587,7 @@ async function loadMarketplace() {
     // Try to fetch registry, but fallback to ALL_SKILLS if unavailable
     let skills = ALL_SKILLS;
     try {
-      const r = await fetch(`${ROUTER_URL}/registry`);
+      const r = await fetch(`${ROUTER_URL}/skills`);
       if (r.ok) {
         const data = await r.json();
         if (data.skills && data.skills.length > 0) {
@@ -574,7 +595,12 @@ async function loadMarketplace() {
         }
       }
     } catch (e) {
-      console.log('Registry fetch failed, using static catalog');
+      console.log('Skills fetch failed, using static catalog');
+      const statusBanner = document.getElementById('routerStatusBanner');
+      if (statusBanner) {
+        statusBanner.textContent = 'Router unreachable: marketplace registry is unavailable. Start the router on http://localhost:8000 and reload the page.';
+        statusBanner.style.display = 'block';
+      }
     }
     $('statSkills').textContent = skills.length;
     $('navStatus').textContent = `${skills.length} skills live`;
@@ -583,6 +609,23 @@ async function loadMarketplace() {
   } catch (e) {
     $('skillsGrid').textContent = `Failed to load marketplace: ${e.message}`;
   }
+}
+
+function isLocalFileView() {
+  return window.location.protocol === 'file:';
+}
+
+function showLocalFileWarning() {
+  if (!isLocalFileView()) return;
+  const warning = document.createElement('div');
+  warning.style.margin = '16px 0';
+  warning.style.padding = '14px 16px';
+  warning.style.border = '1px solid #ffb86c';
+  warning.style.background = 'rgba(255, 184, 108, 0.08)';
+  warning.style.color = '#f8f8f2';
+  warning.style.borderRadius = '12px';
+  warning.textContent = 'Warning: this page is loaded via file://. For registration and marketplace updates to work, open it from a local server such as http://localhost:3001 or another local host port. The router must also be running on http://localhost:8000.';
+  document.body.insertBefore(warning, document.body.firstChild);
 }
 
 function formatUsdc(amount) {
@@ -931,19 +974,33 @@ function parseSkillRegistration(input) {
 }
 
 async function registerSkill() {
-  const raw = $('skillInput').value;
-  let payload;
-  try {
-    payload = parseSkillRegistration(raw);
-  } catch (e) {
-    alert(`Invalid skill definition: ${e.message}`);
+  const id = $('skillIdInput').value.trim();
+  const name = $('skillNameInput').value.trim() || id;
+  const price = parseFloat($('skillPriceInput').value.trim());
+  const pay_to = $('skillPayToInput').value.trim();
+
+  if (!id) {
+    alert('Skill ID is required.');
+    return;
+  }
+  if (!pay_to) {
+    alert('Pay-to wallet address is required.');
+    return;
+  }
+  if (Number.isNaN(price) || price < 0) {
+    alert('Enter a valid price per call in USDC.');
     return;
   }
 
-  if (!payload.id || !payload.pay_to || payload.price_usdc === undefined) {
-    alert('Skill payload must include id, pay_to, and price_usdc.');
-    return;
-  }
+  const payload = {
+    id,
+    name,
+    price_usdc: price,
+    pay_to,
+    description: `User-registered skill ${name}`,
+    tags: [],
+    llm_compat: [],
+  };
 
   try {
     const r = await fetch(`${ROUTER_URL}/register`, {
@@ -956,17 +1013,29 @@ async function registerSkill() {
       throw new Error(data.error || JSON.stringify(data));
     }
     alert(`Registered skill ${data.skill_id}`);
-    $('skillInput').value = '';
+    $('skillIdInput').value = '';
+    $('skillNameInput').value = '';
+    $('skillPriceInput').value = '';
+    $('skillPayToInput').value = '';
     loadMarketplace();
   } catch (e) {
-    alert(`Register failed: ${e.message || e}`);
+    const message = e.message || String(e);
+    if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+      const extra = isLocalFileView()
+        ? 'The UI is loaded from file://, so it must be served from http://localhost:3001 to work correctly.'
+        : 'Make sure the VeriForge router is running on http://localhost:8000 and the browser can reach it.';
+      alert(`Register failed: router unreachable at ${ROUTER_URL}. ${extra}`);
+    } else {
+      alert(`Register failed: ${message}`);
+    }
   }
 }
 
 $('verifyBtn').onclick = verifyTrace;
-$('CopyBtn').onclick = registerSkill;
+$('RegisterBtn').onclick = registerSkill;
 
 // ─── Boot ───
+showLocalFileWarning();
 loadMarketplace();
 </script>
 </body>

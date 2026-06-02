@@ -1,6 +1,6 @@
 {
   "version": "0.6.0",
-  "updated_at": "2026-05-27",
+  "updated_at": "2026-06-03",
   "skills": [
     {
       "id": "claims-intent",
@@ -327,6 +327,32 @@
         "gemini"
       ],
       "public_key": "d4f879b5df72df840e5e0e7eebc5fb3b40655318f6849aafb7a7fb11e11e0c94"
+    },
+    {
+      "id": "test-skill-local-001",
+      "pay_to": "0xdeadbeef",
+      "price_usdc": 0.01,
+      "name": "Local Test Skill",
+      "endpoint": "",
+      "description": "Created during debugging",
+      "inputs": [],
+      "outputs": [],
+      "tags": [],
+      "llm_compat": [],
+      "public_key": ""
+    },
+    {
+      "id": "Computer Vision Skill",
+      "pay_to": "0xYourWallet",
+      "price_usdc": 0.008,
+      "name": "Duan",
+      "endpoint": "",
+      "description": "User-registered skill Duan",
+      "inputs": [],
+      "outputs": [],
+      "tags": [],
+      "llm_compat": [],
+      "public_key": ""
     }
   ]
 }
