@@ -214,6 +214,13 @@ pure functions via a read-only volume mount.
 - **Demo wallets** are deterministic placeholders, not funded accounts.
 - **Self-registration** writes to the running registry only; the committed seed stays at 10 by design (listing happens live).
 
+## Public URL 
+   router                 : https://vf-router-4plonm5r6a-as.a.run.app
+   audit                  : https://vf-audit-4plonm5r6a-as.a.run.app
+   activity               : https://vf-activity-4plonm5r6a-as.a.run.app
+   claims-intent          : https://vf-claims-intent-4plonm5r6a-as.a.run.app
+   claims-damage-vision   : https://vf-claims-damage-vision-4plonm5r6a-as.a.run.app
+
 ## Built by
 
 @duan + @ryan + 2 Claude Codes · UCWS Singapore Hackathon 2026 · Skills Track
