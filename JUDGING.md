@@ -214,12 +214,40 @@ pure functions via a read-only volume mount.
 - **Demo wallets** are deterministic placeholders, not funded accounts.
 - **Self-registration** writes to the running registry only; the committed seed stays at 10 by design (listing happens live).
 
-## Public URL 
+## Public URL (live on Google Cloud Run · asia-southeast1)
    router                 : https://vf-router-4plonm5r6a-as.a.run.app
    audit                  : https://vf-audit-4plonm5r6a-as.a.run.app
    activity               : https://vf-activity-4plonm5r6a-as.a.run.app
    claims-intent          : https://vf-claims-intent-4plonm5r6a-as.a.run.app
    claims-damage-vision   : https://vf-claims-damage-vision-4plonm5r6a-as.a.run.app
+
+```bash
+curl https://vf-router-4plonm5r6a-as.a.run.app/health
+curl "https://vf-router-4plonm5r6a-as.a.run.app/skills/search?q=faked%20photo&rank=verified"
+curl https://vf-audit-4plonm5r6a-as.a.run.app/reputation
+```
+
+### What the live deployment shows vs the local demo (honest scope)
+
+The Cloud Run URLs above are **proof the system runs on Google Cloud** (Best Use of GCP
+track): live discovery (`/skills/search`), the self-describing manifests, and public
+verification (`/verify`, `/reputation`) all respond on the open internet.
+
+The **full flywheel demo runs locally** via `docker compose up` (the 5-step path above) —
+that's where you see all 11 skills + KIMI routing, Gemini-ranked discovery, seeded
+verifiable reputation driving the ranking, and portable receipts (`scripts/verify_receipt.py`).
+Deliberate differences on the live URLs, called out so nothing is misread as the local run:
+
+- **Discovery ranking** is the dependency-free **lexical** fallback (the cloud router runs
+  without a `GOOGLE_API_KEY`); locally it uses Gemini embeddings. Same endpoint, same
+  ranking math — only the relevance signal differs.
+- **Reputation is empty** on the live URL (no seeded calls); the "proof-beats-relevance"
+  rank shift is demonstrated locally after `scripts/seed_reputation.sh`.
+- **Two reference skills** are deployed (`claims-intent`, `claims-damage-vision`) to prove
+  the per-skill Cloud Run path; the full 11-skill chain + `/run` pipeline runs locally.
+
+Nothing on the live URL is mocked beyond what's labelled here — every response it returns
+is real and independently verifiable.
 
 ## Built by
 
