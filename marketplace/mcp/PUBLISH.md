@@ -21,6 +21,24 @@ This folder ships everything a registry needs:
 
 ---
 
+## Ready-to-run (the router is already live)
+
+The router is deployed at **`https://vf-router-4plonm5r6a-as.a.run.app`** (Cloud Run,
+Singapore), and `smithery.yaml` already defaults `veriforgeRouterUrl` to it — so a
+Smithery-hosted MCP server works out of the box, no extra config. The interactive logins
+below can't be scripted (they're your identity); run them once:
+
+```bash
+cd marketplace/mcp
+npm install -g @smithery/cli && smithery login && smithery deploy   # A: Smithery hosts the MCP server → public URL
+# then put that Smithery URL into server.json "remotes"[0].url and:
+npm install -g @modelcontextprotocol/registry && mcp-publish         # B: official registry (GitHub auth)
+```
+
+mcp.so / Glama / PulseMCP (section C) auto-crawl this public repo — no action needed.
+
+---
+
 ## A. Smithery (smithery.ai) — widest reach
 
 ```bash

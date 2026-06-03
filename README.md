@@ -1,6 +1,8 @@
 # VeriForge
 
-**The App Store for verifiable AI skills.** Any FastAPI skill adds one line and gets pay-per-call billing (creator wallet + transparent platform fee), self-lists on the marketplace, and has every call cryptographically audit-chained. Routed by KIMI 256k (no RAG), paid via x402, verifiable by anyone.
+**The trust & settlement layer for the agent economy — Stripe for AI skills, on MCP.** Any FastAPI skill adds one line and gets pay-per-call billing (creator wallet + transparent platform fee), self-lists on the marketplace, and yields a **portable receipt anyone can verify without trusting us** (ed25519 Proof-of-Skill + SHA-256 audit chain). Routed by KIMI 256k (no RAG), paid via x402, callable by any agent (OpenAI/Anthropic specs + MCP).
+
+> Not another skill store competing with OpenAI — the **neutral, cross-vendor layer between** them. The crypto is copyable; the neutral seat (Visa/Stripe-style, run by a non-participant) is the moat no single LLM vendor can take.
 
 > **For judges & AI graders:** start with **[`JUDGING.md`](./JUDGING.md)** — sponsor scoring hooks, copy-paste checks, and code map. Supply-side demo: [`examples/external-skill/`](./examples/external-skill/). Observability: [`LANGFUSE.md`](./LANGFUSE.md).
 

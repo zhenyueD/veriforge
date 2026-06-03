@@ -17,17 +17,17 @@ startCommand:
         type: string
         title: VeriForge Router URL
         description: Base URL of a running VeriForge router (the BFF over skills/audit/activity).
-        default: http://localhost:8000
+        default: https://vf-router-4plonm5r6a-as.a.run.app
     required: []
   # Map validated config → process env the server reads.
   exampleConfig:
-    veriforgeRouterUrl: https://your-veriforge-router.example.com
+    veriforgeRouterUrl: https://vf-router-4plonm5r6a-as.a.run.app
   commandFunction: |
     (config) => ({
       command: "python",
       args: ["server.py"],
       env: {
         MCP_TRANSPORT: "streamable-http",
-        VERIFORGE_ROUTER_URL: config.veriforgeRouterUrl || "http://localhost:8000"
+        VERIFORGE_ROUTER_URL: config.veriforgeRouterUrl || "https://vf-router-4plonm5r6a-as.a.run.app"
       }
     })
