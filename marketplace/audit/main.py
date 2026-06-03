@@ -159,3 +159,59 @@ def verify_trace(trace_id: str):
         "chain_errors": errors,
         "full_chain": [e.to_dict() for e in full],
     }
+
+
+@app.get("/receipt/{trace_id}")
+def receipt(trace_id: str):
+    """
+    A portable, self-verifiable Proof-of-Skill receipt — the 'Stripe receipt' for
+    one paid skill call. Everything needed to verify it is INSIDE the JSON: anyone,
+    on any machine, with no VeriForge code and no network, can confirm
+      (1) ed25519 attribution — a specific skill's key signed this exact output, and
+      (2) SHA-256 integrity — the audit-chain link wasn't tampered.
+    See scripts/verify_receipt.py for the ~40-line standalone checker.
+    """
+    entry = store.get_by_trace(trace_id)
+    if not entry:
+        raise HTTPException(404, f"trace_id={trace_id!r} not found")
+    d = entry.to_dict()
+    sig = (d.get("extra") or {}).get("signature") or {}
+    # The exact bytes the skill signed (must match sdk/veriforge.py attach_x402).
+    signed_statement = f"{sig.get('skill_id', d['skill_id'])}|{sig.get('body_sha256','')}|{sig.get('signed_ts','')}"
+    # The exact preimage the chain hash is computed over (must match audit/chain.py).
+    vp = d.get("verify_passed")
+    chain_preimage = "|".join([
+        d["prev_chain_hash"], d["session_id"], str(d["seq"]), d["skill_id"],
+        d["trace_id"], d["input_hash"], d["output_hash"],
+        "" if vp is None else str(int(bool(vp))), f"{d['ts']:.6f}",
+    ])
+    return {
+        "veriforge_receipt": "v1",
+        "what_this_proves": "A specific skill produced a specific output for a specific input, "
+                            "was paid per call, and the record is tamper-evident — verifiable by anyone.",
+        "skill_id": d["skill_id"],
+        "trace_id": d["trace_id"],
+        "session_id": d["session_id"],
+        "seq": d["seq"],
+        "input_hash": d["input_hash"],
+        "output_hash": d["output_hash"],
+        "verify_passed": vp,
+        "ts": d["ts"],
+        "elapsed_ms": d.get("elapsed_ms", 0),
+        "attribution": {                        # ed25519 Proof-of-Skill (creator-held key)
+            "public_key": sig.get("public_key", ""),
+            "signature": sig.get("signature", ""),
+            "signed_statement": signed_statement,
+            "body_sha256": sig.get("body_sha256", ""),
+            "signed_ts": sig.get("signed_ts", ""),
+        },
+        "integrity": {                          # SHA-256 audit-chain link
+            "prev_chain_hash": d["prev_chain_hash"],
+            "chain_hash": d["chain_hash"],
+            "chain_preimage": chain_preimage,
+        },
+        "settlement": (d.get("extra") or {}).get("settlement", {}),
+        "how_to_verify": "python3 scripts/verify_receipt.py <this.json>  "
+                         "— no VeriForge import, no network. Checks ed25519(signed_statement, public_key) "
+                         "and sha256(chain_preimage) == chain_hash.",
+    }
