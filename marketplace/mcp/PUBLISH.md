@@ -25,45 +25,48 @@ This folder ships everything a registry needs:
 
 The router is deployed at **`https://vf-router-4plonm5r6a-as.a.run.app`** (Cloud Run,
 Singapore), and `smithery.yaml` already defaults `veriforgeRouterUrl` to it — so a
-Smithery-hosted MCP server works out of the box, no extra config. The interactive logins
-below can't be scripted (they're your identity); run them once:
+Smithery-hosted MCP server works out of the box, no extra config.
 
-```bash
-cd marketplace/mcp
-npm install -g @smithery/cli && smithery login && smithery deploy   # A: Smithery hosts the MCP server → public URL
-# then put that Smithery URL into server.json "remotes"[0].url and:
-npm install -g @modelcontextprotocol/registry && mcp-publish         # B: official registry (GitHub auth)
-```
+**Recommended (one path): list on Smithery via the web UI.** Smithery deploys MCP servers
+by connecting a GitHub repo — there is no `smithery deploy` publish command in the CLI
+(the `smithery` CLI is a *consumer* tool for connecting to servers).
 
-mcp.so / Glama / PulseMCP (section C) auto-crawl this public repo — no action needed.
+1. Go to **smithery.ai** → sign in with **GitHub**.
+2. **Deploy a new MCP server** → connect repo **`zhenyueD/veriforge`**, base directory
+   **`marketplace/mcp`**.
+3. Smithery reads `smithery.yaml` + `Dockerfile`, builds, and hosts it (pointed at the
+   live router by default). Once green, it's one-click installable into Claude Desktop / Cursor.
+
+The official MCP Registry (section B) is **optional** and more involved (it needs the
+server published as a package or a hosted remote URL first). mcp.so / Glama / PulseMCP
+(section C) **auto-crawl** this public repo — no action needed.
 
 ---
 
 ## A. Smithery (smithery.ai) — widest reach
 
+Smithery deploys by **connecting a GitHub repo via the web UI** (there is no publish
+command in the `smithery` CLI — that CLI only *connects to* servers):
+
+1. **smithery.ai** → sign in with GitHub.
+2. **Deploy a new MCP server** → connect repo `zhenyueD/veriforge`, base directory
+   `marketplace/mcp`.
+3. Smithery reads `smithery.yaml` + `Dockerfile`, builds, and hosts it (pointed at the
+   live router by default). Once green, one-click installable into Claude Desktop / Cursor.
+
+## B. Official MCP Registry (registry.modelcontextprotocol.io) — optional
+
+The official registry hosts **metadata only**, so it needs the server distributed as a
+**package** (npm / PyPI / OCI image / MCPB) *or* a **hosted remote URL** (e.g. the
+Smithery-hosted URL from section A) referenced in `server.json` first.
+
 ```bash
-# 1. one-time
-npm install -g @smithery/cli
-smithery login
-
-# 2. from this folder
-cd marketplace/mcp
-smithery deploy        # builds Dockerfile, validates smithery.yaml, lists the server
+brew install mcp-publisher            # or download the prebuilt binary from the repo's releases
+mcp-publisher login                   # GitHub OAuth — must log in as `zhenyueD`
+                                      #   (namespace io.github.zhenyueD/* in server.json)
+mcp-publisher publish                 # publishes server.json to the registry
 ```
-
-Or via the web UI: smithery.ai → **Add Server** → point at the GitHub repo,
-**base directory** `marketplace/mcp`. Smithery reads `smithery.yaml` + `Dockerfile`
-automatically. Once green, anyone can install it into Claude Desktop / Cursor in one click.
-
-## B. Official MCP Registry (registry.modelcontextprotocol.io)
-
-```bash
-# 1. one-time
-npm install -g @modelcontextprotocol/registry   # provides `mcp-publish`
-# 2. create server.json (name, description, repository, remotes/packages), then:
-mcp-publish        # authenticates via GitHub and submits
-```
-See https://github.com/modelcontextprotocol/registry for the `server.json` schema.
+Tool & guide: https://github.com/modelcontextprotocol/registry (`cmd/publisher`).
 
 ## C. mcp.so / Glama / PulseMCP — community indexes
 
