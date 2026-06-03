@@ -242,6 +242,15 @@
   .rep-line { font-size: 11px; color: var(--fg-mute); font-family: "JetBrains Mono", monospace;
               margin-bottom: 14px; }
   .rep-line b { color: var(--ok); }
+  .rep-line.proven b { color: var(--ok); }
+  .rep-line.unproven { color: var(--warn); }
+  .rank-delta { font-size: 12px; font-family: "JetBrains Mono", monospace; margin-left: 7px; font-weight: 700; }
+  .rank-delta.up { color: var(--ok); }
+  .rank-delta.down { color: var(--fg-mute); }
+  .rank-delta.new { color: var(--accent-3); }
+  .disco-caption { width: 100%; color: var(--fg-dim); font-family: "Inter", sans-serif;
+                   font-size: 12.5px; margin-top: 2px; }
+  .disco-caption b { color: var(--accent); }
 
   .verify-row { display: flex; gap: 10px; margin-bottom: 14px; }
   .verify-row input { flex: 1; background: var(--bg-1); color: var(--fg);
@@ -538,7 +547,7 @@ const ALL_SKILLS = [
     public_key: 'd37370657a72cfc9af3fbc97bc0c75a9780c99f4307bdf8c45495292a78e8592',
     description: 'Deterministic image-provenance fraud check. pHash collision detection + EXIF age check catch recycled photos. No LLM required.',
     tags: ['vertical:fraud', 'capability:deterministic'],
-    example: 'Verify image provenance for claim ORD-1234.',
+    example: 'Has this product photo been digitally edited or faked? Order ORD-1234.',
   },
   {
     id: 'text-summarize', name: 'Text Summarizer', icon: '📑',
@@ -562,7 +571,7 @@ const ALL_SKILLS = [
     public_key: '7c837ccb8aa02c37c19a7a144a12ebbe7c0cfd6910c1ac3cf8ae7592cf9b4d0e',
     description: 'Analyze sentiment into positive/neutral/negative with emotion breakdown and intensity score. Domain-agnostic.',
     tags: ['horizontal:utility', 'capability:sentiment'],
-    example: 'I am extremely disappointed with this purchase.',
+    example: 'Analyze the sentiment of this customer review: this is the worst purchase ever.',
   },
   {
     id: 'deep-research', name: 'Deep Research (MiroFlow)', icon: '🔬',
@@ -697,6 +706,7 @@ function renderSkills(skills) {
 
 // ─── Discovery: semantic search ranked by verified reputation ───
 let currentRank = 'verified';
+let _prevRank = { q: null, order: [] };   // remembers last ranking for the SAME query → show movement
 
 $('rankToggle').querySelectorAll('button').forEach(b => {
   b.onclick = () => {
@@ -736,8 +746,26 @@ function renderSearchResults(data) {
   meta.appendChild(el('span', {text: `${data.latency_ms} ms`}));
   meta.appendChild(el('button', {
     class: 'disco-clear', text: 'clear ✕',
-    onclick: () => { $('searchInput').value = ''; meta.style.display = 'none'; loadMarketplace(); },
+    onclick: () => { $('searchInput').value = ''; meta.style.display = 'none'; _prevRank = {q:null,order:[]}; loadMarketplace(); },
   }));
+  // What's driving the order — makes "proof beats relevance" explicit.
+  const caption = el('div', {class: 'disco-caption'});
+  if (data.rank === 'verified') {
+    caption.appendChild(el('b', {text: 'Ranked by relevance + on-chain verified reputation. '}));
+    caption.appendChild(document.createTextNode('Skills that have cryptographically proven themselves rank higher — flip to Relevance to see the difference.'));
+  } else {
+    caption.appendChild(el('b', {text: 'Ranked by semantic relevance only. '}));
+    caption.appendChild(document.createTextNode('No trust signal — flip to ✓ Trust-ranked to let proven skills earn their place.'));
+  }
+  meta.appendChild(caption);
+
+  // Movement vs the previous ranking for the SAME query (toggle flip, or re-search after using a skill).
+  const prevOrder = (_prevRank.q === data.query) ? _prevRank.order : null;
+  const deltaFor = (id, i) => {
+    if (!prevOrder) return null;
+    const p = prevOrder.indexOf(id);
+    return p === -1 ? 'NEW' : (p - i);   // >0 climbed, <0 dropped
+  };
 
   const grid = $('skillsGrid');
   while (grid.firstChild) grid.removeChild(grid.firstChild);
@@ -745,7 +773,8 @@ function renderSearchResults(data) {
     grid.appendChild(el('div', {class: 'empty-state', text: 'No skills matched. Try different words.'}));
     return;
   }
-  data.results.forEach((res, i) => grid.appendChild(searchCard(res, i, data.rank)));
+  data.results.forEach((res, i) => grid.appendChild(searchCard(res, i, data.rank, deltaFor(res.id, i))));
+  _prevRank = { q: data.query, order: data.results.map(r => r.id) };
 }
 
 const pct = (x) => Math.round((x || 0) * 100);
@@ -758,7 +787,7 @@ function metricBar(label, value, cls) {
   ]);
 }
 
-function searchCard(res, i, rank) {
+function searchCard(res, i, rank, delta) {
   const price = res.price_usdc !== undefined ? res.price_usdc : 0.001;
   const card = el('div', {
     class: 'skill-card result',
@@ -767,7 +796,15 @@ function searchCard(res, i, rank) {
       $('demo').scrollIntoView({behavior: 'smooth'});
     },
   });
-  card.appendChild(el('span', {class: 'rank-num', text: `#${i + 1}`}));
+  const rankEl = el('span', {class: 'rank-num', text: `#${i + 1}`});
+  if (delta === 'NEW') {
+    rankEl.appendChild(el('span', {class: 'rank-delta new', text: 'NEW'}));
+  } else if (typeof delta === 'number' && delta > 0) {
+    rankEl.appendChild(el('span', {class: 'rank-delta up', text: `▲${delta}`}));
+  } else if (typeof delta === 'number' && delta < 0) {
+    rankEl.appendChild(el('span', {class: 'rank-delta down', text: `▼${-delta}`}));
+  }
+  card.appendChild(rankEl);
   card.appendChild(el('div', {class: 'skill-icon', text: ICONS[res.id] || '🧩'}));
   card.appendChild(el('div', {class: 'skill-name', text: res.name || res.id}));
   card.appendChild(el('div', {class: 'skill-desc', text: (res.description || '').slice(0, 150)}));
@@ -781,14 +818,15 @@ function searchCard(res, i, rank) {
   card.appendChild(metrics);
 
   const rep = res.reputation || {};
-  const repLine = el('div', {class: 'rep-line'});
-  if ((rep.calls || 0) > 0) {
+  const calls = rep.calls || 0;
+  const repLine = el('div', {class: `rep-line ${calls > 0 ? 'proven' : 'unproven'}`});
+  if (calls > 0) {
     const pr = rep.pass_rate != null ? rep.pass_rate : rep.verified_ok / rep.calls;
-    repLine.appendChild(document.createTextNode('on-chain: '));
-    repLine.appendChild(el('b', {text: `${rep.verified_ok}/${rep.calls} verified`}));
-    repLine.appendChild(document.createTextNode(` · pass ${pct(pr)}%`));
+    repLine.appendChild(document.createTextNode('✓ proven · '));
+    repLine.appendChild(el('b', {text: `${rep.verified_ok}/${rep.calls} verified calls`}));
+    repLine.appendChild(document.createTextNode(` · pass ${pct(pr)}% on-chain`));
   } else {
-    repLine.appendChild(document.createTextNode('on-chain: no calls yet'));
+    repLine.appendChild(document.createTextNode('⚠ unproven · 0 verified calls — no track record yet'));
   }
   card.appendChild(repLine);
 
@@ -797,7 +835,7 @@ function searchCard(res, i, rank) {
   footer.appendChild(el('span', {class: 'skill-try', text: 'Try it →'}));
   card.appendChild(footer);
   return card;
-wh}
+}
 
 // ─── Examples wiring ───
 $('examples').querySelectorAll('span').forEach(s => {
@@ -895,6 +933,12 @@ function renderEvent(ev) {
       },
     });
     bodyEl.appendChild(link);
+    bodyEl.appendChild(document.createTextNode(' '));
+    bodyEl.appendChild(el('a', {
+      class: 'event-verify-link', text: '[receipt]',
+      href: `${AUDIT_URL}/receipt/${ev.trace_id}`, target: '_blank',
+      title: 'Portable, self-verifiable receipt — save it and run scripts/verify_receipt.py offline (no VeriForge, no network)',
+    }));
   }
 
   const tsEl = el('span', {class: 'event-ts', text: ts});
