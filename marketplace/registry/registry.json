@@ -353,6 +353,19 @@
       "tags": [],
       "llm_compat": [],
       "public_key": ""
+    },
+    {
+      "id": "Demo Computer Vision",
+      "pay_to": "0xYourWallet",
+      "price_usdc": 0.009,
+      "name": "LegendZara",
+      "endpoint": "",
+      "description": "User-registered skill LegendZara",
+      "inputs": [],
+      "outputs": [],
+      "tags": [],
+      "llm_compat": [],
+      "public_key": ""
     }
   ]
 }
