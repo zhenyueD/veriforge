@@ -171,10 +171,18 @@ services:
     container_name: vf-deep-research
     restart: unless-stopped
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SERPER_API_KEY: ${SERPER_API_KEY}
-      JINA_API_KEY: ${JINA_API_KEY}
-      MIROFLOW_CONFIG: ${MIROFLOW_CONFIG:-agent_llm_gpt4o}
+      # LLM backend = MiroMind's hosted MiroThinker (OpenAI-compatible) — one key,
+      # replacing the Anthropic / OpenRouter / OpenAI backends MiroFlow ships with.
+      MIROFLOW_CONFIG: ${MIROFLOW_CONFIG:-agent_llm_mirothinker}
+      OAI_MIROTHINKER_API_KEY: ${MIROMIND_API}
+      OAI_MIROTHINKER_BASE_URL: ${MIROMIND_BASE_URL:-https://api.miromind.ai/v1}
+      # MiroFlow's mirothinker config marks openai_api_key mandatory (hydra ???),
+      # but hint-gen / final-answer extraction are disabled in it, so it's never
+      # called — point it at the same MiroMind key to satisfy the requirement.
+      OPENAI_API_KEY: ${MIROMIND_API}
+      # Tool keys (search / read) are separate from the LLM key — keep if you have them.
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
+      JINA_API_KEY: ${JINA_API_KEY:-}
       MIROFLOW_TIMEOUT: "300"
       PYTHONUNBUFFERED: "1"
     ports: ["7008:7008"]
