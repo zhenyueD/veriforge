@@ -160,6 +160,10 @@ def build_input(skill_id: str, user_input: str, prior: dict, image_b64: Optional
     if skill_id == "sentiment-analyze":
         return {"text": user_input}
 
+    # MiroMind deep-research takes the research question as `task`.
+    if skill_id == "deep-research":
+        return {"task": user_input}
+
     # Default: pass user_input only
     return {"user_message": user_input}
 
@@ -333,12 +337,15 @@ def execute_plan(
         # x402 payment dance: send X-Payment so the skill's gate lets us in, then
         # read the real settlement (split) the skill returns in X-Payment-Settled.
         # Each skill call is its own Langfuse span (latency per skill).
+        # deep-research runs a multi-step MiroFlow agent (minutes); the rest are quick.
+        step_timeout = int(os.getenv("DEEP_RESEARCH_TIMEOUT", "320")) if sid == "deep-research" else 60
         with obs.span(name=f"skill:{sid}"):
             if mode == "http":
                 x_pay = _mock_x_payment(sid)
-                step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""), x_payment=x_pay)
+                step = _exec_http(sid, payload, endpoint=endpoints.get(sid, ""),
+                                  x_payment=x_pay, timeout=step_timeout)
             else:
-                step = _exec_in_process(sid, payload)
+                step = _exec_in_process(sid, payload, timeout=step_timeout)
 
         steps.append(step)
 
