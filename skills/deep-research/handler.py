@@ -6,8 +6,10 @@ agent (LLM + serper web search + jina reading + wikipedia) as a subprocess, then
 hash-chains MiroFlow's reproducible step trace into a verifiable chain (D2) — tying
 MiroMind's reproducible-trace ethos to VeriForge's cryptographic verifiability.
 
-LLM goes through MiroFlow's direct-OpenAI client (GPTOpenAIClient), so it needs only
-OPENAI_API_KEY + SERPER_API_KEY + JINA_API_KEY (no OpenRouter).
+LLM goes through MiroMind's hosted MiroThinker model (OpenAI-compatible) via the
+agent_llm_mirothinker config — a single MIROMIND_API key replaces the Anthropic /
+OpenRouter / OpenAI backends MiroFlow ships with. SERPER_API_KEY + JINA_API_KEY are
+optional tool keys (web search / reading), separate from the LLM key.
 """
 from __future__ import annotations
 import hashlib
